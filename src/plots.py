@@ -42,7 +42,8 @@ def qa_figure(fig, name, caption, cap_artist=None):
         if t.x0 < -1 or t.x1 > W + 1 or t.y1 > H + 1:
             issues.append(f"clipped title: {a.get_title()[:40]!r}")
     for y, row in rows.items():
-        if not any(a.get_ylabel() for a in row): issues.append("row without y-label")
+        if not any(a.get_ylabel() or any(b.get_ylabel() for b in a.get_shared_y_axes().get_siblings(a)) for a in row):
+            issues.append("row without y-label")
     is_heat = name.startswith(("heatmap", "design_sensitivity"))
     has_legend = any(a.get_legend() for a in fig.axes)
     if not is_heat:
@@ -66,7 +67,7 @@ def _save(fig, outdir, name, caption):
     import textwrap
     wrapped = textwrap.fill(caption, width=int(fig.get_figwidth() * 15.5))
     nlines = wrapped.count("\n") + 1
-    fig.tight_layout(rect=(0, 0.02 + 0.017 * nlines, 1, 1))
+    fig.tight_layout(rect=(0, (0.12 + 0.115 * nlines) / fig.get_figheight(), 1, 1))
     cap_artist = fig.text(0.01, 0.005, wrapped, fontsize=6.5, color="#444", ha="left", va="bottom")
     qa_figure(fig, name, caption, cap_artist)
     fig.savefig(outdir / f"{name}.png"); plt.close(fig)
@@ -108,7 +109,7 @@ def collect(params, scenario, version, draws, n_paths, horizon, baseline):
         b = sim["b"]
         out["q"][r] = np.percentile(b, [5, 25, 50, 75, 95], axis=0)
         out["ew"][r] = event_windows(sim, params["D_trig"])
-        m = metrics.summarize(sim, params, baseline)
+        m = metrics.summarize(sim, params, baseline[r] if isinstance(baseline, dict) else baseline)
         out["m"][r] = {k: m[k] for k in ("p_crisis_any", "p_hcrisis_any", "p_bT_gt100")}
         out["path"][r] = {"b": b[i], "gfn": sim["gfn"][i], "susp": sim["suspended"][i]}
     out["path"]["D"] = runs["A"]["D"][i]
@@ -117,7 +118,17 @@ def collect(params, scenario, version, draws, n_paths, horizon, baseline):
 
 
 # ------------------------------------------------------------------------------------------------- panels
-def draw_fan(ax, q, r, T, title, ylabel=True, legend=False):
+def _logify(ax, ticks=(10, 20, 50, 100, 200, 500, 1000, 2000)):
+    """Log y-axis with plain-number tick labels (used when a spiral makes the linear scale unreadable)."""
+    from matplotlib.ticker import FixedLocator, FixedFormatter, NullLocator
+    ax.set_yscale("log")
+    lo, hi = ax.get_ylim()
+    t = [v for v in ticks if lo <= v <= hi]
+    ax.yaxis.set_major_locator(FixedLocator(t)); ax.yaxis.set_major_formatter(FixedFormatter([f"{v:g}" for v in t]))
+    ax.yaxis.set_minor_locator(NullLocator())
+
+
+def draw_fan(ax, q, r, T, title, ylabel=True, legend=False, logy=False):
     """One fan-chart panel: median plus 50% and 90% bands of debt/GDP for regime r."""
     x = np.arange(T + 1)
     ax.fill_between(x, q[0], q[4], color=COL[r], alpha=0.15, lw=0, label="90% band")
@@ -127,9 +138,12 @@ def draw_fan(ax, q, r, T, title, ylabel=True, legend=False):
     ax.set_title(title, fontsize=8.5); ax.set_xlabel("year (t)")
     ax.set_ylabel("debt, % of GDP" if ylabel else "")
     if legend: ax.legend(loc="upper left", fontsize=7)
+    if logy:
+        _logify(ax)
+        ax.set_ylabel("debt, % of GDP (log scale)" if ylabel else "")
 
 
-def draw_event(ax, ew, title, clean=False, ylabel=True, legend=False):
+def draw_event(ax, ew, title, clean=False, ylabel=True, legend=False, logy=False):
     """Average GFN from t-2 to t+5 around a qualifying hit for the three regimes."""
     x = np.arange(-2, 6)
     for r in "ABC":
@@ -140,35 +154,49 @@ def draw_event(ax, ew, title, clean=False, ylabel=True, legend=False):
     ax.set_xlabel("years from hurricane hit (t = 0)")
     ax.set_ylabel("average GFN, % of GDP" if ylabel else "")
     if legend: ax.legend(fontsize=7)
+    if logy:
+        _logify(ax, ticks=(1, 2, 3, 5, 7, 10, 15, 20, 30, 40, 50, 60, 80, 100, 120, 150, 200))
+        ax.set_ylabel("average GFN, % of GDP (log scale)" if ylabel else "")
 
 
 # ------------------------------------------------------------------------------------------------- figures
 def fan_charts(data, params, outdir, version, n, T, seed):
-    """data[(scenario, design)] -> collect(). One figure per scenario: rows = designs, columns = regimes."""
+    """data[(scenario, design)] -> collect(). One figure per scenario: Regime A once (it does not depend on the clause
+    design) in the left column, Regimes B and C for each design to its right. Log y-axis when a spiral makes the linear
+    scale unreadable (95th percentile above 400% of GDP)."""
     scens = sorted({k[0] for k in data}); designs = sorted({k[1] for k in data})
     for sc in scens:
-        fig, axes = plt.subplots(len(designs), 3, figsize=(10, 3.2 * len(designs)), sharey=True, squeeze=False)
+        spiral = max(data[(sc, d)]["q"][r][4].max() for d in designs for r in "ABC") > 400
+        fig = plt.figure(figsize=(10, 3.4 * len(designs)))
+        gs = fig.add_gridspec(len(designs), 3)
+        axA = fig.add_subplot(gs[:, 0])
+        draw_fan(axA, data[(sc, designs[0])]["q"]["A"], "A", T, LAB["A"] + "\n(same in both clause designs)", legend=True, logy=spiral)
         for i, d in enumerate(designs):
-            for j, r in enumerate("ABC"):
-                ttl = f"{LAB[r]}\n{DLAB[d]}" if r != "A" else f"{LAB[r]} (design-independent)\n{DLAB[d]} panel"
-                draw_fan(axes[i, j], data[(sc, d)]["q"][r], r, T, ttl, ylabel=(j == 0), legend=(i == 0 and j == 0))
+            for j, r in enumerate("BC"):
+                ax = fig.add_subplot(gs[i, j + 1], sharey=axA)
+                draw_fan(ax, data[(sc, d)]["q"][r], r, T, f"{LAB[r]}\n{DLAB[d]}", ylabel=False, logy=spiral)
+                ax.tick_params(labelleft=True)
         cap = (f"Debt/GDP fan charts, {SLAB.get(sc, sc)}, model version {version} "
                f"({'exogenous rate' if version == 1 else 'endogenous risk premium, capped'}). Bands: 50% and 90% of paths; "
-               "dotted line = 100% of GDP. " + NOTE.format(n=n, T=T, seed=seed))
+               "dotted line = 100% of GDP. " + ("Log y-axis (debt spiral). " if spiral else "") + NOTE.format(n=n, T=T, seed=seed))
         _save(fig, outdir, f"fan_{sc}_v{version}", cap)
 
 
 def event_window_chart(data, outdir, version, n, T, seed, clean=False):
     scens = sorted({k[0] for k in data}); designs = sorted({k[1] for k in data})
     fig, axes = plt.subplots(len(designs), len(scens), figsize=(4.2 * len(scens), 3.2 * len(designs)), squeeze=False)
+    logs = []
     for i, d in enumerate(designs):
         for j, sc in enumerate(scens):
-            draw_event(axes[i, j], data[(sc, d)]["ew"], f"{SLAB.get(sc, sc)} | {DLAB[d]}", clean=clean,
-                       ylabel=(j == 0), legend=(i == 0 and j == 0))
+            ew = data[(sc, d)]["ew"]
+            logy = max(ew[r]["clean" if clean else "all"][0].max() for r in "ABC") > 60   # GFN spiral
+            logs.append(logy)
+            draw_event(axes[i, j], ew, f"{SLAB.get(sc, sc)} | {DLAB[d]}", clean=clean,
+                       ylabel=(j == 0), legend=(i == 0 and j == 0), logy=logy)
     kind = ("CLEAN windows: no second qualifying hit between t-2 and t+5." if clean else
             "all qualifying hits with a complete t-2..t+5 window; windows may contain subsequent hits.")
     cap = (f"Average gross financing needs around a hurricane (damage >= D_trig), version {version}: the clause flattens "
-           f"the spike; any repayment hump appears after the window. Events: {kind} " + NOTE.format(n=n, T=T, seed=seed))
+           f"the spike; any repayment hump appears after the window. " + ("Panels with a GFN spiral use a log y-axis. " if any(logs) else "") + f"Events: {kind} " + NOTE.format(n=n, T=T, seed=seed))
     _save(fig, outdir, f"event_window{'_clean' if clean else ''}_v{version}", cap)
 
 
@@ -207,28 +235,42 @@ def _heat(ax, M, xs, ys, title, vmax, cmap="BrBG"):
 
 def heatmaps(grid, outdir, n, T, seed):
     """Benefit of the clause (A minus B; positive = clause helps) over initial debt x hurricane probability.
+    Panels: (a) mean peak GFN, (b) hurricane-attributable crisis probability (informative everywhere), (c) absolute
+    crisis probability, with cells masked (grey) where a crisis happens with certainty without the clause (A >= 99%).
     Colour scale winsorized at the 95th percentile of |benefit| per panel (true max printed in the caption)."""
     for v in sorted(grid.version.unique()):
         for d in sorted(grid.design.unique()):
             g = grid[(grid.version == v) & (grid.design == d)]
-            fig, axes = plt.subplots(1, 2, figsize=(9.5, 3.8))
+            fig, axes = plt.subplots(1, 3, figsize=(14, 3.8))
             notes = []
-            for ax, (col, ttl) in zip(axes, [("benefit_peak_gfn2_mean", "reduction in mean peak GFN (pp of GDP)"),
-                                            ("benefit_p_crisis_any", "reduction in P(liquidity crisis) (pp)")]):
+            panels = [("benefit_peak_gfn2_mean", "reduction in mean peak GFN (pp of GDP)", 1.0, False),
+                      ("benefit_p_hcrisis_any", "reduction in P(hurricane-attributable crisis) (pp)", 100.0, False),
+                      ("benefit_p_crisis_any", "reduction in P(GFN > GFN_crit) (pp)", 100.0, True)]
+            for ax, (col, ttl, scale, mask) in zip(axes, panels):
                 M = g.pivot(index="b_0", columns="lambda", values=col)
-                scale = 100.0 if "p_crisis" in col else 1.0
-                vals = M.values * scale
-                vmax = float(np.nanpercentile(np.abs(vals), 95)) or 1.0
-                im = _heat(ax, vals, [round(c, 2) for c in M.columns], [f"{b:.0f}" for b in M.index], ttl, vmax)
-                for (a, b_), z in np.ndenumerate(vals):
-                    ax.text(b_, a, f"{z:.1f}", ha="center", va="center", fontsize=5.5)
+                vals = np.ma.masked_invalid(M.values * scale)
+                if mask:
+                    certain = g.pivot(index="b_0", columns="lambda", values="A_p_crisis_any").values >= 0.99
+                    vals = np.ma.masked_where(certain, vals)
+                vmax = float(np.nanpercentile(np.abs(vals.compressed()), 95)) or 1.0
+                cm = plt.get_cmap("BrBG").copy(); cm.set_bad("#c8c8c8")
+                im = ax.imshow(vals, origin="lower", aspect="auto", cmap=cm, vmin=-vmax, vmax=vmax)
+                ax.set_xticks(range(M.shape[1])); ax.set_xticklabels([f"{c:g}" for c in M.columns], fontsize=7)
+                ax.set_yticks(range(M.shape[0])); ax.set_yticklabels([f"{b:.0f}" for b in M.index], fontsize=7)
+                ax.grid(False); ax.set_title(ttl, fontsize=8)
+                hidden = np.ma.getmaskarray(vals)
+                for a_ in range(vals.shape[0]):
+                    for b_ in range(vals.shape[1]):
+                        ax.text(b_, a_, "n/a" if hidden[a_, b_] else f"{vals[a_, b_]:.1f}", ha="center", va="center",
+                                fontsize=5.5, color="#555" if hidden[a_, b_] else "k")
                 ax.set_xlabel("annual hurricane probability lambda"); ax.set_ylabel("initial debt, % of GDP")
                 fig.colorbar(im, ax=ax, shrink=0.85, extend="both", label="pp (positive = clause helps)")
-                notes.append(f"{ttl}: true max {np.nanmax(vals):.1f}, min {np.nanmin(vals):.1f}, colour scale +/-{vmax:.1f}")
+                notes.append(f"{ttl}: true max {vals.max():.1f}, min {vals.min():.1f}, colour scale +/-{vmax:.1f}")
             cap = (f"Clause benefit, {DLAB[d]}, version {v}. The debt axis varies the fiscal stance jointly (primary balance "
                    "interpolated between the two scenarios), so it is a vulnerability gradient, not a pure debt gradient. "
-                   "Positive = clause helps. Colour scale winsorized at the 95th percentile; " + "; ".join(notes) + ". "
-                   + NOTE.format(n=n, T=T, seed=seed))
+                   "Positive = clause helps. Grey 'n/a' = GFN exceeds GFN_crit with certainty even without the clause (>= 99%), so the "
+                   "absolute-crisis benefit is undefined; panel (b) is informative there. Colour scale winsorized at the 95th "
+                   "percentile; " + "; ".join(notes) + ". " + NOTE.format(n=n, T=T, seed=seed))
             _save(fig, outdir, f"heatmap_{d}_v{v}", cap)
 
 

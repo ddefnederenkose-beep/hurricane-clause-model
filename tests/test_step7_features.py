@@ -61,3 +61,28 @@ def test_no_surplus_rule_floors_primary_balance_once_debt_negative():
     assert first > 0
     assert (on["pd"][0, first + 1:] >= 0).all() and (off["pd"][0, first + 1:] < 0).all()
     np.testing.assert_array_equal(on["pd"][0, 1:first + 1], off["pd"][0, 1:first + 1])   # unchanged before the trigger
+
+
+def test_app_path_reproduces_experiment1_exactly():
+    """The app (plots.collect on the interpolated scenario) and experiment 1 give identical metrics for the same
+    scenario, design, version and draws; only the sample size differs by default."""
+    from src import plots
+    n, T = 3000, 30
+    d = hurricanes.draw_noise(42, n, T)
+    des = DESIGNS["barbados_style"]; p = config.design_params(P(), des)
+    scen = {**experiments.scenario_for_b0(65.0, SCEN), "lambda": SCEN["grenada_like"]["lambda"]}
+    out = plots.collect(p, scen, 1, d, n, T, experiments.baselines(p, scen, 1, T))
+    df = experiments.experiment_baseline(P(), {"grenada_like": SCEN["grenada_like"]}, {"barbados_style": des}, d, 1, n, T)
+    for r in "AB":
+        row = df[df.regime == r].iloc[0]
+        assert abs(out["m"][r]["p_hcrisis_any"] - row.p_hcrisis_any) < 1e-12
+        assert abs(out["m"][r]["p_crisis_any"] - row.p_crisis_any) < 1e-12
+
+
+def test_attributable_flag_uses_regime_own_baseline_with_premium_on():
+    """With the deferral premium on, B's no-hurricane GFN is above A's; the flag must not count that as hurricane-caused."""
+    p = P(deferral_premium_on=1, **{"lambda": 0.0})
+    scen = {k: v for k, v in SCEN["grenada_like"].items() if k != "lambda"}
+    d = hurricanes.draw_noise(1, 200, 30)
+    df = experiments.experiment_baseline(p, {"g": scen}, {"barbados_style": DESIGNS["barbados_style"]}, d, 1, 200, 30)
+    assert (df.p_hcrisis_any == 0).all()

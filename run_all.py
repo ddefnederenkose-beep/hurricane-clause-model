@@ -69,7 +69,7 @@ def main():
             for dn, dsg in designs.items():
                 p = config.design_params(params, dsg)
                 for sn, sc in main_sc.items():
-                    base = experiments.baseline_gfn_path(p, sc, v, T)
+                    base = experiments.baselines(p, sc, v, T)
                     data[(sn, dn)] = plots.collect(p, sc, v, draws, N, T, base)
             p0 = params
             plots.fan_charts(data, p0, figs, v, N, T, seed)
@@ -87,10 +87,21 @@ def main():
         nfig, nissue = plots.qa_report(figs)
         print(f"\nFigure QA: {nfig} figures, {nissue} issue(s) (see outputs/figures/QA_REPORT.md)")
         print(f"\nFigures written to outputs/figures ({len(plots.CAPTIONS)} files, {time.time()-t2:.0f}s)")
-    ptab = docs_gen.status_table(params, scenarios, designs)
+    t3 = time.time()
+    rk = experiments.experiment_reconstruction_check(params, main_sc, designs, draws, n_paths=N, horizon=T)
+    rk.to_csv(tables / "exp3_reconstruction_check.csv", index=False)
+    jumps = experiments.largest_jump(rk); jumps.to_csv(tables / "exp3_reconstruction_check_jumps.csv", index=False)
+    print("\nK-vs-R check (largest rise in clause benefit, hurricane-attributable crisis; K at which it occurs):")
+    print(jumps.pivot_table(index=["design", "scenario", "version"], columns="R", values="jump_at_K").to_string())
+    infl = experiments.parameter_influence(params, main_sc, designs, draws, n=min(N, 5000), T=T)
+    infl.to_csv(tables / "parameter_influence.csv", index=False)
+    ptab = docs_gen.status_table(params, scenarios, designs, infl)
     ptab.to_csv(tables / "placeholder_status.csv", index=False)
-    print("\nPARAMETER STATUS TABLE (replace values top-down; set status to VERIFIED once sourced)")
-    print(ptab.to_string(index=False, max_colwidth=70))
+    print(f"\n(K-vs-R check and parameter sweep: {time.time()-t3:.0f}s)")
+    print("\nPARAMETER STATUS TABLE: sourceable parameters first, sorted by influence on P(hurricane-attributable crisis) of Regime B")
+    print("(one-at-a-time +-25% sweep, mean |change| in pp over 2 versions x 2 scenarios x 2 designs; set status VERIFIED once sourced)")
+    show = ptab[["parameter", "value", "type", "influence_pp", "delta_minus25_pp", "delta_plus25_pp", "status", "note"]]
+    print(show.to_string(index=False, float_format=lambda x: f"{x:.2f}"))
     docs_gen.update_methods(ROOT / "docs" / "METHODS.md")
     print(f"Finished in {time.time() - t0:.1f}s")
 

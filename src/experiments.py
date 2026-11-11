@@ -13,10 +13,16 @@ B0_GRID = np.linspace(40, 140, 9)
 LAMBDA_GRID = np.array([0.03, 0.05, 0.08, 0.10, 0.13, 0.16, 0.20, 0.25])
 
 
-def baseline_gfn_path(params, scenario, version, horizon):
-    """No-hurricane GFN path (deterministic; identical for all regimes because nothing is ever triggered)."""
-    sim = simulate.simulate(params, scenario, "A", version, forced_hits={}, n_paths=1, horizon=horizon)
+def baseline_gfn_path(params, scenario, version, horizon, regime="A"):
+    """No-hurricane GFN path of the given regime (deterministic). Nothing is ever triggered, so A, B and C coincide
+    unless the deferral-risk premium is on (it raises the covered rate in B and C only), which is why the
+    hurricane-attributable flag of each regime is measured against that regime's OWN no-hurricane path."""
+    sim = simulate.simulate(params, scenario, regime, version, forced_hits={}, n_paths=1, horizon=horizon)
     return sim["gfn"]
+
+
+def baselines(params, scenario, version, horizon):
+    return {r: baseline_gfn_path(params, scenario, version, horizon, r) for r in "ABC"}
 
 
 # ----------------------------------------------------------------------------------------- experiments 1 and 2
@@ -27,12 +33,12 @@ def experiment_baseline(params, scenarios, designs, draws, version=1, n_paths=10
     for dname, design in designs.items():
         p = config.design_params(params, design)
         for sname, scen in scenarios.items():
-            base = baseline_gfn_path(p, scen, version, horizon)
+            base = baselines(p, scen, version, horizon)
             runs = simulate.run_regimes(p, scen, version, draws=draws, n_paths=n_paths, horizon=horizon)
             for reg, sim in runs.items():
                 rows.append({"design": dname, "scenario": sname, "version": version, "regime": reg,
                              "deferral_premium_on": int(p.get("deferral_premium_on", 0)),
-                             **metrics.summarize(sim, p, base)})
+                             **metrics.summarize(sim, p, base[reg])})
     return pd.DataFrame(rows)
 
 
@@ -46,8 +52,9 @@ def scenario_for_b0(b0, scenarios):
     return {"name": f"b0={b0:.0f}", "b_0": float(b0), "pd_bar": float(pd_bar)}
 
 
-def _benefit(simA, simB, params, baseline):
-    mA, mB = metrics.summarize(simA, params, baseline), metrics.summarize(simB, params, baseline)
+def _benefit(simA, simB, params, baseA, baseB=None):
+    mA = metrics.summarize(simA, params, baseA)
+    mB = metrics.summarize(simB, params, baseA if baseB is None else baseB)
     out = {}
     for k in ("peak_gfn2_mean", "peak_gfn6_mean", "p_crisis_any", "mean_crisis_years", "p_hcrisis_any", "bT_mean"):
         out[f"benefit_{k}"] = mA[k] - mB[k]
@@ -70,7 +77,8 @@ def experiment_heatmaps(params, scenarios, designs, draws, versions=(1, 2), n_pa
                     p = config.design_params(pl, design)
                     B = simulate.simulate(p, scen, "B", v, draws=draws, n_paths=n_paths, horizon=horizon)
                     rows.append({"design": dname, "version": v, "b_0": b0, "pd_bar": scen["pd_bar"],
-                                 "lambda": lam, **_benefit(A, B, p, base)})
+                                 "lambda": lam, **_benefit(A, B, p, base,
+                                                          baseline_gfn_path(p, scen, v, horizon, "B"))})
     return pd.DataFrame(rows)
 
 
@@ -92,7 +100,8 @@ def experiment_design_sensitivity(params, scenarios, designs, draws, versions=(1
                     p = {**p0, "D_trig": dt, "K": k, "defer_repay_years": m}
                     B = simulate.simulate(p, scen, "B", v, draws=draws, n_paths=n_paths, horizon=horizon)
                     rows.append({"design": dname, "scenario": sname, "version": v, "D_trig": dt, "K": k,
-                                 "defer_repay_years": m, **_benefit(A, B, p, base)})
+                                 "defer_repay_years": m, **_benefit(A, B, p, base,
+                                                                    baseline_gfn_path(p, scen, v, horizon, "B"))})
     return pd.DataFrame(rows)
 
 
@@ -179,4 +188,99 @@ def experiment_npv_relief(params, scenarios, draws, version=1, n_paths=10000, ho
                 row.update(pct_damage_mean=pct_dmg.mean(), pct_damage_median=np.median(pct_dmg),
                            pct_damage_p5=np.percentile(pct_dmg, 5), pct_damage_p95=np.percentile(pct_dmg, 95))
             rows.append(row)
+    return pd.DataFrame(rows)
+
+
+# ------------------------------------------------------------------------- reconstruction-length check (K vs R)
+def experiment_reconstruction_check(params, scenarios, designs, draws, n_paths=10000, horizon=30,
+                                    r_grid=(2, 3, 4), k_grid=(1, 2, 3, 4, 5, 6), versions=(1, 2)):
+    """Does the benefit of the clause jump when the deferral length K reaches the reconstruction length R?
+    Benefit = A minus B (positive = clause helps), at the design's own repayment speed and the default D_trig."""
+    rows = []
+    for R in r_grid:
+        p0 = {**params, "R": R}
+        for sname, scen in scenarios.items():
+            for v in versions:
+                base = baseline_gfn_path(p0, scen, v, horizon)
+                A = simulate.simulate(p0, scen, "A", v, draws=draws, n_paths=n_paths, horizon=horizon)
+                for dname, design in designs.items():
+                    for k in k_grid:
+                        p = {**config.design_params(p0, design), "K": k}
+                        B = simulate.simulate(p, scen, "B", v, draws=draws, n_paths=n_paths, horizon=horizon)
+                        rows.append({"R": R, "design": dname, "scenario": sname, "version": v, "K": k,
+                                     **_benefit(A, B, p, base, baseline_gfn_path(p, scen, v, horizon, "B"))})
+    return pd.DataFrame(rows)
+
+
+def largest_jump(df, col="benefit_p_hcrisis_any"):
+    """For each (R, design, scenario, version): the K at which the benefit rises most vs K-1."""
+    out = []
+    for key, g in df.groupby(["R", "design", "scenario", "version"]):
+        g = g.sort_values("K"); d = g[col].diff()
+        out.append({"R": key[0], "design": key[1], "scenario": key[2], "version": key[3],
+                    "jump_at_K": int(g.loc[d.idxmax(), "K"]), "jump_size_pp": 100 * float(d.max())})
+    return pd.DataFrame(out)
+
+
+# --------------------------------------------------------------------- one-at-a-time parameter influence (+-25%)
+_INT = {"R", "M", "K", "max_triggers", "defer_repay_years"}
+_SHARE = {"s", "psi", "kappa", "lambda"}
+_SWITCH = {"use_trigger_cap", "deferral_premium_on", "no_surplus_rule"}
+
+
+def _perturb(name, v, sign, pct):
+    x = v * (1 + sign * pct)
+    if name.split(".")[-1] in _INT:
+        x = int(np.floor(x)) if sign < 0 else int(np.ceil(x))
+        x = max(x, 0 if name.split(".")[-1] == "K" else 1)
+    if name.split(".")[-1] in _SHARE:
+        x = min(max(x, 0.0), 1.0)
+    return x
+
+
+def _p_hcrisis_B(params, scenarios, designs, draws, n, T, versions=(1, 2)):
+    """P(hurricane-attributable crisis) in Regime B for every version x scenario x design combination."""
+    out = []
+    for v in versions:
+        for dname, design in designs.items():
+            p = config.design_params(params, design)
+            for sname, scen in scenarios.items():
+                base = baseline_gfn_path(p, scen, v, T, "B")
+                B = simulate.simulate(p, scen, "B", v, draws=draws, n_paths=n, horizon=T)
+                hc = B["gfn"][:, 1:] > base[..., 1:] + p["GFN_margin"]
+                out.append(hc.any(axis=1).mean())
+    return np.array(out)
+
+
+def parameter_influence(params, scenarios, designs, draws, n=5000, T=30, pct=0.25, versions=(1, 2)):
+    """One-at-a-time sweep: every numeric parameter at -25% and +25% (integers rounded outward), all else fixed, same
+    hurricane draws. Influence = mean over the 8 version x scenario x design combinations of the absolute change in
+    P(hurricane-attributable crisis) in Regime B, in percentage points. Parameters that are overridden (global s, K,
+    defer_repay_years by the designs; global lambda for grenada_like) or inactive (rho = 0, switches) show ~0 / NaN."""
+    base = _p_hcrisis_B(params, scenarios, designs, draws, n, T, versions)
+    rows = []
+
+    def sweep(label, make):
+        d = []
+        for sign in (-1, +1):
+            pm, sc, ds = make(sign)
+            d.append(100 * (_p_hcrisis_B(pm, sc, ds, draws, n, T, versions) - base))
+        rows.append({"parameter": label, "delta_minus25_pp": d[0].mean(), "delta_plus25_pp": d[1].mean(),
+                     "influence_pp": float(np.mean([np.abs(d[0]).mean(), np.abs(d[1]).mean()])),
+                     "max_cell_effect_pp": float(max(np.abs(d[0]).max(), np.abs(d[1]).max()))})
+
+    for k, v in params.items():
+        if k in _SWITCH or k == "deferral_spread" or v == 0:
+            continue
+        sweep(k, lambda sg, k=k, v=v: ({**params, k: _perturb(k, v, sg, pct)}, scenarios, designs))
+    # deferral spread is only active with the premium switch on
+    sweep("deferral_spread", lambda sg: ({**params, "deferral_premium_on": 1,
+          "deferral_spread": params["deferral_spread"] * (1 + sg * pct)}, scenarios, designs))
+    for sn, sc in scenarios.items():
+        for k in ("b_0", "pd_bar", "lambda"):
+            if k in sc and sc[k] != 0:
+                sweep(f"{sn}.{k}", lambda sg, sn=sn, k=k: (params, {**scenarios, sn: {**scenarios[sn], k: _perturb(k, scenarios[sn][k], sg, pct)}}, designs))
+    for dn, dsg in designs.items():
+        for k, v in dsg["overrides"].items():
+            sweep(f"{dn}.{k}", lambda sg, dn=dn, k=k, v=v: (params, scenarios, {**designs, dn: {**designs[dn], "overrides": {**designs[dn]["overrides"], k: _perturb(k, v, sg, pct)}}}))
     return pd.DataFrame(rows)
