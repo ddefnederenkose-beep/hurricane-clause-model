@@ -1,7 +1,10 @@
 # Starting conditions. Units: % of GDP as plain numbers. A negative pd_bar is a primary surplus.
+# An optional per-scenario `lambda` overrides the global hurricane probability.
+# role: main = used in all experiments; sensitivity = added to experiments 1-2 only.
 scenarios:
   grenada_like:
     description: "moderate debt, small primary surplus (a liquidity problem only)"
+    role: main
     b_0:
       value: 65
       source: ""
@@ -12,8 +15,14 @@ scenarios:
       source: ""
       status: PLACEHOLDER_VERIFY
       meaning: "baseline primary deficit/GDP (negative = surplus)"
+    lambda:
+      value: 0.051
+      source: "Mallucci 2022, NOAA-based major-hurricane frequency, Grenada"
+      status: PLACEHOLDER_VERIFY
+      meaning: "annual probability of a major hurricane for this scenario"
   high_debt:
-    description: "debt above 100% of GDP, persistent primary deficit (a solvency problem)"
+    description: "debt above 100% of GDP, persistent primary deficit (a solvency problem); uses the global lambda"
+    role: main
     b_0:
       value: 110
       source: ""
@@ -24,3 +33,21 @@ scenarios:
       source: ""
       status: PLACEHOLDER_VERIFY
       meaning: "baseline primary deficit/GDP (positive = deficit)"
+  grenada_like_lambda_010:
+    description: "sensitivity: grenada_like with the earlier placeholder lambda = 0.10"
+    role: sensitivity
+    b_0:
+      value: 65
+      source: ""
+      status: PLACEHOLDER_VERIFY
+      meaning: "initial debt/GDP"
+    pd_bar:
+      value: -2
+      source: ""
+      status: PLACEHOLDER_VERIFY
+      meaning: "baseline primary deficit/GDP (negative = surplus)"
+    lambda:
+      value: 0.10
+      source: ""
+      status: PLACEHOLDER_VERIFY
+      meaning: "sensitivity value only"

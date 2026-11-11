@@ -10,6 +10,8 @@ B  Hurricane clause: if D_t >= D_trig, interest and amortization on clause-cover
        of the regular 1/M schedule and repaid on its own schedule (m_rep = defer_repay_years), so principal is never
        paid twice. defbal is reduced by its own repayments. Coupons are paid on the whole stock (incl. defbal).
    Overlap rule: a new qualifying hit during an active window restarts the K-year window; defbal stays deferred.
+   Trigger cap: at most `max_triggers` activations per path (config option `use_trigger_cap`, default on); applies to B and C.
+   Optional deferral-risk premium: constant spread on the covered stock's rate in B/C only (default off).
 C  Hypothetical debt relief (benchmark, not a real instrument): same trigger, but suspended interest and
    amortization are forgiven. Forgiven interest is never added to the stock, forgiven principal is deducted.
 """
@@ -19,12 +21,15 @@ import numpy as np
 REGIMES = ("A", "B", "C")
 
 
-def suspension_mask(regime: str, d_t, rem, d_trig: float, k: int):
-    """Return (suspended_this_year, updated remaining-window counter). Window includes the hit year."""
+def suspension_mask(regime: str, d_t, rem, count, d_trig: float, k: int, cap=np.inf):
+    """Return (suspended_this_year, remaining-window counter, trigger count).
+    Window includes the hit year. A qualifying hit (D >= D_trig) uses one trigger while count < cap (lifetime
+    three-trigger cap, default on); a hit during an active window restarts it and also uses a trigger."""
     if regime == "A":
-        return np.zeros(d_t.shape, dtype=bool), rem
-    rem = np.where(d_t >= d_trig, k, rem)
-    return rem > 0, rem
+        return np.zeros(d_t.shape, dtype=bool), rem, count
+    fire = (d_t >= d_trig) & (count < cap)
+    rem = np.where(fire, k, rem)
+    return rem > 0, rem, count + fire
 
 
 def service_split(regime: str, susp, bc_prev, int_c, defbal_prev, g, M, m_rep):

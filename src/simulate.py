@@ -27,7 +27,7 @@ def simulate(params, scenario, regime="A", version=1, draws=None, forced_hits=No
     else:
         if draws is None:
             draws = hurricanes.draw_noise(seed, n_paths, horizon)
-        D = hurricanes.damages(draws, p["lambda"], p["mu_D"], p["sigma_D"], p["D_max"])
+        D = hurricanes.damages(draws, scenario.get("lambda", p["lambda"]), p["mu_D"], p["sigma_D"], p["D_max"])
     N, T = D.shape
     M, K, R = p["M"], int(p["K"]), int(p["R"])
 
@@ -47,6 +47,9 @@ def simulate(params, scenario, regime="A", version=1, draws=None, forced_hits=No
     out["gfn"][:, 0] = gfn0
     out["q"][:, 0] = 0.0   # q = deferred principal balance (defbal) of Regime B
     rem = np.zeros(N, dtype=int)
+    count = np.zeros(N, dtype=int)
+    cap = p["max_triggers"] if p.get("use_trigger_cap", 1) else np.inf
+    spread = p.get("deferral_spread", 0.0) if (regime in ("B", "C") and p.get("deferral_premium_on", 0)) else 0.0
 
     for t in range(1, T + 1):
         d_t = D[:, t - 1]
@@ -57,14 +60,15 @@ def simulate(params, scenario, regime="A", version=1, draws=None, forced_hits=No
         pd = economy.primary_deficit(p, scenario["pd_bar"], recon, b_prev)
         reff, xbind = debt.effective_rate(p, version, out["reff"][:, t - 1], b_prev, out["gfn"][:, t - 1])
 
-        susp, rem = regimes.suspension_mask(regime, d_t, rem, p["D_trig"], K)
-        int_c, _ = debt.scheduled_service(bc_prev, reff, g, M)
+        susp, rem, count = regimes.suspension_mask(regime, d_t, rem, count, p["D_trig"], K, cap)
+        rc = reff + spread   # covered-debt rate (spread only in B/C when the robustness switch is on)
+        int_c, _ = debt.scheduled_service(bc_prev, rc, g, M)
         int_o, am_o = debt.scheduled_service(bo_prev, reff, g, M)
         sp = regimes.service_split(regime, susp, bc_prev, int_c, out["q"][:, t - 1], g, M,
                                    p.get("defer_repay_years", M))
 
         share = debt.pd_allocation_share(bc_prev, b_prev, p["s"])
-        bc = debt.stock_step(bc_prev, reff, g, share * pd, sp["forgiven"])
+        bc = debt.stock_step(bc_prev, rc, g, share * pd, sp["forgiven"])
         bo = debt.stock_step(bo_prev, reff, g, (1 - share) * pd)
 
         interest = int_o + sp["pay_int"]

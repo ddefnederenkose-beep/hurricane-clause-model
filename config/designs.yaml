@@ -1,0 +1,39 @@
+# Named clause designs. Each design overrides calibration parameters; the three-trigger cap is global (calibration.yaml).
+# All values are placeholders until the group enters sourced clause terms.
+designs:
+  grenada_style:
+    description: "low covered share, ~1 year of service deferred per trigger, three-trigger cap, repayment over remaining maturity"
+    overrides:
+      s:
+        value: 0.30
+        source: ""
+        status: PLACEHOLDER_VERIFY
+        meaning: "share of debt covered (low)"
+      K:
+        value: 1
+        source: ""
+        status: PLACEHOLDER_VERIFY
+        meaning: "years of service deferred per trigger"
+      defer_repay_years:
+        value: 8
+        source: ""
+        status: PLACEHOLDER_VERIFY
+        meaning: "repayment over the remaining maturity (placeholder = M)"
+  barbados_style:
+    description: "covered share ~0.9+, K = 2 years, same trigger cap, repayment over remaining maturity"
+    overrides:
+      s:
+        value: 0.90
+        source: ""
+        status: PLACEHOLDER_VERIFY
+        meaning: "share of debt covered (high)"
+      K:
+        value: 2
+        source: ""
+        status: PLACEHOLDER_VERIFY
+        meaning: "years of service deferred per trigger"
+      defer_repay_years:
+        value: 8
+        source: ""
+        status: PLACEHOLDER_VERIFY
+        meaning: "repayment over the remaining maturity (placeholder = M)"

@@ -74,6 +74,7 @@ parameters:
     status: PLACEHOLDER_VERIFY
     meaning: "average maturity in years (1/M of each stock matures per year)"
   s:
+    # Generic default used by tests/app. Experiments use the named designs in config/designs.yaml instead.
     value: 0.60
     source: ""
     status: PLACEHOLDER_VERIFY
@@ -113,6 +114,26 @@ parameters:
     source: ""
     status: PLACEHOLDER_VERIFY
     meaning: "hurricane-attributable liquidity crisis: GFN exceeds the no-hurricane (lambda=0) baseline path by more than this many pp of GDP"
+  max_triggers:
+    value: 3
+    source: "Grenada 2015 bond terms, Asonuma et al. 2017"
+    status: PLACEHOLDER_VERIFY
+    meaning: "lifetime cap on the number of clause activations per path (every qualifying hit while the clause is still available uses one trigger)"
+  use_trigger_cap:
+    value: 1
+    source: "Grenada 2015 bond terms, Asonuma et al. 2017"
+    status: PLACEHOLDER_VERIFY
+    meaning: "1 = the lifetime trigger cap is on (default), 0 = unlimited triggers"
+  deferral_spread:
+    value: 0.0025
+    source: "proxy for delay-risk pricing, cf. Mallucci 2022"
+    status: PLACEHOLDER_VERIFY
+    meaning: "constant spread (decimal, 0.0025 = 25 bps) added to the covered debt's interest rate in Regimes B/C only (robustness switch)"
+  deferral_premium_on:
+    value: 0
+    source: "proxy for delay-risk pricing, cf. Mallucci 2022"
+    status: PLACEHOLDER_VERIFY
+    meaning: "1 = apply deferral_spread to the covered stock in B/C; 0 = off (default)"
   x_max:
     # Added by the model builder (not in the original spec): without a cap the linear premium makes
     # debt explode numerically (r-g grows with b). Documented in docs/DECISIONS.md.
