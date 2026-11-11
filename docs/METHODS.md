@@ -23,7 +23,7 @@ Question: do sovereign hurricane clauses create meaningful fiscal space after a 
   - Regime B: *PV of deferred cash flows (timing relief; net transfer ~ 0)*: suspended interest + amortization on covered debt, discounted at r_bar, per suspension spell, reported as % of GDP only. It is gross cash-flow relief; the stock is unchanged, so creditors' net position is unchanged.
   - Regime C: *PV of debt relief (net transfer)*: forgiven service, reported as % of GDP and % of damage.
   - Scope: the identity PV(B deferred cash flows) = PV(A service) - PV(B service) holds only with `defer_repay_years` = M, no deferral premium and Version 1, where skipped service is never made up in gross terms; it is asserted path by path in that case and the code raises otherwise unless explicitly overridden.
-- Regime C's covered-debt forgiveness can push debt below zero in a minority of paths (5.5% of Barbados-style `grenada_like` paths); no floor is imposed.
+- **Regime C is a hypothetical benchmark and its relief is overstated in paths where forgiveness outruns the remaining stock** (debt goes below zero in 5.5% of Barbados-style `grenada_like` paths; no floor is imposed). An optional rule (`no_surplus_rule`, default off) stops primary surpluses once debt is negative; switching it on changed C's terminal-debt median by less than 0.02 points, so it is left off.
 
 ## Parameters, sources and status
 <!-- PARAMS:START -->
@@ -54,6 +54,7 @@ Question: do sovereign hurricane clauses create meaningful fiscal space after a 
 | use_trigger_cap | 1 | 1 = the lifetime trigger cap is on (default), 0 = unlimited triggers | Grenada 2015 bond terms, Asonuma et al. 2017 | PLACEHOLDER_VERIFY |
 | deferral_spread | 0.0025 | constant spread (decimal, 0.0025 = 25 bps) added to the covered debt's interest rate in Regimes B/C only (robustness switch) | proxy for delay-risk pricing, cf. Mallucci 2022 | PLACEHOLDER_VERIFY |
 | deferral_premium_on | 0 | 1 = apply deferral_spread to the covered stock in B/C; 0 = off (default) | proxy for delay-risk pricing, cf. Mallucci 2022 | PLACEHOLDER_VERIFY |
+| no_surplus_rule | 0 | 1 = once total debt falls below zero, the primary balance is floored at 0 for the rest of the path (no more surpluses to retire debt that no longer exists); reconstruction deficits still apply. 0 = off | (none yet) | PLACEHOLDER_VERIFY |
 | x_max | 0.1 | cap on the risk premium x_t (decimal, 0.10 = 10pp); numerical/economic backstop, Version 2 only | (none yet) | PLACEHOLDER_VERIFY |
 | GFN_crit | 15 | liquidity-crisis threshold, GFN as % of GDP | (none yet) | PLACEHOLDER_VERIFY |
 | rho | 0.0 | fiscal reaction of primary deficit to debt above target (off by default) | (none yet) | PLACEHOLDER_VERIFY |

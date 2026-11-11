@@ -134,6 +134,12 @@ parameters:
     source: "proxy for delay-risk pricing, cf. Mallucci 2022"
     status: PLACEHOLDER_VERIFY
     meaning: "1 = apply deferral_spread to the covered stock in B/C; 0 = off (default)"
+  no_surplus_rule:
+    # Added after review of negative debt in Regime C (DECISIONS #31). Effect on C was immaterial, so default OFF.
+    value: 0
+    source: ""
+    status: PLACEHOLDER_VERIFY
+    meaning: "1 = once total debt falls below zero, the primary balance is floored at 0 for the rest of the path (no more surpluses to retire debt that no longer exists); reconstruction deficits still apply. 0 = off"
   x_max:
     # Added by the model builder (not in the original spec): without a cap the linear premium makes
     # debt explode numerically (r-g grows with b). Documented in docs/DECISIONS.md.

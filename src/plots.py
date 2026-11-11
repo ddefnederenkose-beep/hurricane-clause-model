@@ -19,12 +19,56 @@ plt.rcParams.update({"font.size": 9, "axes.spines.top": False, "axes.spines.righ
                      "axes.grid": True, "grid.alpha": 0.25, "grid.linewidth": 0.5, "figure.dpi": 100,
                      "savefig.dpi": 200, "legend.frameon": False})
 CAPTIONS: dict[str, str] = {}
+QA: dict[str, list] = {}
+
+
+
+
+def qa_figure(fig, name, caption, cap_artist=None):
+    """Programmatic QA: axis labels, legend with regime names, titles inside the canvas, caption present."""
+    issues = []
+    fig.canvas.draw()
+    rend = fig.canvas.get_renderer()
+    W, H = fig.bbox.width, fig.bbox.height
+    axes = [a for a in fig.axes if a.get_label() != "<colorbar>" and not (a.get_xlabel() == "" and a.get_ylabel() == "" and a.get_title() == "" and not a.has_data())]
+    rows = {}
+    for a in axes:
+        if not a.has_data() and not a.images:
+            continue
+        if not a.get_xlabel() and not any(b.get_xlabel() for b in a.get_shared_x_axes().get_siblings(a)):
+            issues.append("axis without x-label")
+        rows.setdefault(round(a.get_position().y0, 2), []).append(a)
+        t = a.title.get_window_extent(rend)
+        if t.x0 < -1 or t.x1 > W + 1 or t.y1 > H + 1:
+            issues.append(f"clipped title: {a.get_title()[:40]!r}")
+    for y, row in rows.items():
+        if not any(a.get_ylabel() for a in row): issues.append("row without y-label")
+    is_heat = name.startswith(("heatmap", "design_sensitivity"))
+    has_legend = any(a.get_legend() for a in fig.axes)
+    if not is_heat:
+        if not has_legend: issues.append("no legend")
+        else:
+            labels = " ".join(t.get_text() for a in fig.axes if a.get_legend() for t in a.get_legend().get_texts())
+            if not name.startswith(("fan",)) and "A: no clause" not in labels: issues.append("legend lacks regime labels")
+        if not any(("clause" in a.get_title().lower()) for a in fig.axes):
+            issues.append("no design label in any title")
+    if is_heat and not any(ax.get_ylabel() for ax in fig.axes if ax.get_label() == "<colorbar>"):
+        issues.append("colorbar without unit label")
+    if not caption.strip() or "PLACEHOLDER_VERIFY" not in caption: issues.append("caption missing or lacks placeholder note")
+    if cap_artist is not None:
+        bb = cap_artist.get_window_extent(rend)
+        if bb.x1 > W - 2 or bb.x0 < 0 or bb.y1 > H * 0.30: issues.append("caption clipped or too tall")
+    QA[name] = issues
 
 
 def _save(fig, outdir, name, caption):
     outdir = pathlib.Path(outdir); outdir.mkdir(parents=True, exist_ok=True)
-    fig.text(0.01, 0.005, caption, fontsize=6.5, color="#444", ha="left", va="bottom", wrap=True)
-    fig.tight_layout(rect=(0, 0.07, 1, 1))
+    import textwrap
+    wrapped = textwrap.fill(caption, width=int(fig.get_figwidth() * 15.5))
+    nlines = wrapped.count("\n") + 1
+    fig.tight_layout(rect=(0, 0.02 + 0.017 * nlines, 1, 1))
+    cap_artist = fig.text(0.01, 0.005, wrapped, fontsize=6.5, color="#444", ha="left", va="bottom")
+    qa_figure(fig, name, caption, cap_artist)
     fig.savefig(outdir / f"{name}.png"); plt.close(fig)
     CAPTIONS[name] = caption
 
@@ -72,23 +116,42 @@ def collect(params, scenario, version, draws, n_paths, horizon, baseline):
     return out
 
 
+# ------------------------------------------------------------------------------------------------- panels
+def draw_fan(ax, q, r, T, title, ylabel=True, legend=False):
+    """One fan-chart panel: median plus 50% and 90% bands of debt/GDP for regime r."""
+    x = np.arange(T + 1)
+    ax.fill_between(x, q[0], q[4], color=COL[r], alpha=0.15, lw=0, label="90% band")
+    ax.fill_between(x, q[1], q[3], color=COL[r], alpha=0.30, lw=0, label="50% band")
+    ax.plot(x, q[2], color=COL[r], lw=2, label="median")
+    ax.axhline(100, color="#777", lw=0.8, ls=":")
+    ax.set_title(title, fontsize=8.5); ax.set_xlabel("year (t)")
+    ax.set_ylabel("debt, % of GDP" if ylabel else "")
+    if legend: ax.legend(loc="upper left", fontsize=7)
+
+
+def draw_event(ax, ew, title, clean=False, ylabel=True, legend=False):
+    """Average GFN from t-2 to t+5 around a qualifying hit for the three regimes."""
+    x = np.arange(-2, 6)
+    for r in "ABC":
+        y, cnt = ew[r]["clean" if clean else "all"]
+        ax.plot(x, y, color=COL[r], lw=2, marker="o", ms=3.5, label=LAB[r])
+    ax.axvline(0, color="#777", lw=0.8, ls=":")
+    ax.set_title(f"{title} (n={cnt:,} events)", fontsize=8)
+    ax.set_xlabel("years from hurricane hit (t = 0)")
+    ax.set_ylabel("average GFN, % of GDP" if ylabel else "")
+    if legend: ax.legend(fontsize=7)
+
+
 # ------------------------------------------------------------------------------------------------- figures
 def fan_charts(data, params, outdir, version, n, T, seed):
     """data[(scenario, design)] -> collect(). One figure per scenario: rows = designs, columns = regimes."""
     scens = sorted({k[0] for k in data}); designs = sorted({k[1] for k in data})
     for sc in scens:
         fig, axes = plt.subplots(len(designs), 3, figsize=(10, 3.2 * len(designs)), sharey=True, squeeze=False)
-        x = np.arange(T + 1)
         for i, d in enumerate(designs):
             for j, r in enumerate("ABC"):
-                ax = axes[i, j]; q = data[(sc, d)]["q"][r]
-                ax.fill_between(x, q[0], q[4], color=COL[r], alpha=0.15, lw=0, label="90% band")
-                ax.fill_between(x, q[1], q[3], color=COL[r], alpha=0.30, lw=0, label="50% band")
-                ax.plot(x, q[2], color=COL[r], lw=2, label="median")
-                ax.axhline(100, color="#777", lw=0.8, ls=":")
-                ax.set_title(f"{LAB[r]}\n{DLAB[d]}" if r != "A" else f"{LAB[r]} (design-independent)", fontsize=8.5)
-                ax.set_xlabel("year"); ax.set_ylabel("debt, % of GDP") if j == 0 else None
-                if i == 0 and j == 0: ax.legend(loc="upper left", fontsize=7)
+                ttl = f"{LAB[r]}\n{DLAB[d]}" if r != "A" else f"{LAB[r]} (design-independent)\n{DLAB[d]} panel"
+                draw_fan(axes[i, j], data[(sc, d)]["q"][r], r, T, ttl, ylabel=(j == 0), legend=(i == 0 and j == 0))
         cap = (f"Debt/GDP fan charts, {SLAB.get(sc, sc)}, model version {version} "
                f"({'exogenous rate' if version == 1 else 'endogenous risk premium, capped'}). Bands: 50% and 90% of paths; "
                "dotted line = 100% of GDP. " + NOTE.format(n=n, T=T, seed=seed))
@@ -98,17 +161,10 @@ def fan_charts(data, params, outdir, version, n, T, seed):
 def event_window_chart(data, outdir, version, n, T, seed, clean=False):
     scens = sorted({k[0] for k in data}); designs = sorted({k[1] for k in data})
     fig, axes = plt.subplots(len(designs), len(scens), figsize=(4.2 * len(scens), 3.2 * len(designs)), squeeze=False)
-    x = np.arange(-2, 6)
     for i, d in enumerate(designs):
         for j, sc in enumerate(scens):
-            ax = axes[i, j]
-            for r in "ABC":
-                y, cnt = data[(sc, d)]["ew"][r]["clean" if clean else "all"]
-                ax.plot(x, y, color=COL[r], lw=2, marker="o", ms=3.5, label=LAB[r])
-            ax.axvline(0, color="#777", lw=0.8, ls=":")
-            ax.set_title(f"{SLAB.get(sc, sc)} | {DLAB[d]} (n={cnt:,} events)", fontsize=8)
-            ax.set_xlabel("years from hurricane hit (t = 0)"); ax.set_ylabel("average GFN, % of GDP") if j == 0 else None
-            if i == 0 and j == 0: ax.legend(fontsize=7)
+            draw_event(axes[i, j], data[(sc, d)]["ew"], f"{SLAB.get(sc, sc)} | {DLAB[d]}", clean=clean,
+                       ylabel=(j == 0), legend=(i == 0 and j == 0))
     kind = ("CLEAN windows: no second qualifying hit between t-2 and t+5." if clean else
             "all qualifying hits with a complete t-2..t+5 window; windows may contain subsequent hits.")
     cap = (f"Average gross financing needs around a hurricane (damage >= D_trig), version {version}: the clause flattens "
@@ -132,7 +188,7 @@ def bar_charts(data, outdir, version, n, T, seed):
                 ax.bar(xs, vals, w * 0.92, color=COL[r], label=LAB[r])
                 for xx, v in zip(xs, vals): ax.text(xx, v + 0.015, f"{v:.0%}", ha="center", fontsize=6.5)
             ax.set_xticks(np.arange(len(scens))); ax.set_xticklabels([SLAB.get(s, s).split(" (")[0] for s in scens], fontsize=7)
-            ax.set_title(f"{ml}\n{DLAB[d]}", fontsize=8); ax.set_ylim(0, 1.12)
+            ax.set_title(f"{ml}\n{DLAB[d]}", fontsize=8); ax.set_ylim(0, 1.12); ax.set_xlabel("scenario (starting conditions)")
             ax.set_ylabel("probability") if j == 0 else None
             if i == 0 and j == 0: ax.legend(fontsize=7, loc="upper left")
     cap = (f"Liquidity and solvency risk by regime and scenario, version {version}. The absolute crisis flag is 100% in "
@@ -167,7 +223,7 @@ def heatmaps(grid, outdir, n, T, seed):
                 for (a, b_), z in np.ndenumerate(vals):
                     ax.text(b_, a, f"{z:.1f}", ha="center", va="center", fontsize=5.5)
                 ax.set_xlabel("annual hurricane probability lambda"); ax.set_ylabel("initial debt, % of GDP")
-                fig.colorbar(im, ax=ax, shrink=0.85, extend="both")
+                fig.colorbar(im, ax=ax, shrink=0.85, extend="both", label="pp (positive = clause helps)")
                 notes.append(f"{ttl}: true max {np.nanmax(vals):.1f}, min {np.nanmin(vals):.1f}, colour scale +/-{vmax:.1f}")
             cap = (f"Clause benefit, {DLAB[d]}, version {v}. The debt axis varies the fiscal stance jointly (primary balance "
                    "interpolated between the two scenarios), so it is a vulnerability gradient, not a pure debt gradient. "
@@ -193,7 +249,7 @@ def design_heatmaps(sens, outdir, n, T, seed, metric="benefit_p_hcrisis_any", la
                     im = _heat(ax, M.values, list(M.columns), list(M.index), SLAB.get(sc, sc), vmax)
                     for (r_, c_), z in np.ndenumerate(M.values): ax.text(c_, r_, f"{z:.1f}", ha="center", va="center", fontsize=6)
                     ax.set_xlabel(xl); ax.set_ylabel("deferral length K (years)")
-                    fig.colorbar(im, ax=ax, shrink=0.85, extend="both")
+                    fig.colorbar(im, ax=ax, shrink=0.85, extend="both", label="pp (positive = clause helps)")
             cap = (f"Sensitivity to clause design, {DLAB[d]}, version {v}: {label}; positive = clause helps, negative = harmful "
                    "(fast catch-up creates a repayment hump). Colour scale winsorized at the 95th percentile. " + NOTE.format(n=n, T=T, seed=seed))
             _save(fig, outdir, f"design_sensitivity_{tag}_{d}_v{v}", cap)
@@ -217,6 +273,19 @@ def sample_path(data_one, params, outdir, name, title, T, seed):
            "lowers GFN during the deferral window; debt equals A (version 1 stock identity) while C's debt falls. " % p["idx"]
            + f"seed {seed}; ALL parameters PLACEHOLDER_VERIFY.")
     _save(fig, outdir, name, cap)
+
+
+def qa_report(outdir):
+    """Write outputs/figures/QA_REPORT.md; also checks that every PNG has a caption entry. Returns (n_figs, n_issues)."""
+    p = pathlib.Path(outdir)
+    pngs = sorted(x.stem for x in p.glob("*.png"))
+    missing = [n for n in pngs if n not in CAPTIONS]
+    lines = ["# Figure QA (programmatic, auto-generated)\n"]
+    for n in sorted(QA):
+        lines.append(f"- **{n}**: " + ("OK" if not QA[n] else "; ".join(sorted(set(QA[n])))))
+    if missing: lines.append(f"\nFigures without caption entry: {missing}")
+    (p / "QA_REPORT.md").write_text("\n".join(lines) + "\n")
+    return len(pngs), sum(len(v) for v in QA.values()) + len(missing)
 
 
 def write_captions(outdir):

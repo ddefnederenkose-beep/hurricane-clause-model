@@ -48,6 +48,7 @@ def simulate(params, scenario, regime="A", version=1, draws=None, forced_hits=No
     out["q"][:, 0] = 0.0   # q = deferred principal balance (defbal) of Regime B
     rem = np.zeros(N, dtype=int)
     count = np.zeros(N, dtype=int)
+    no_debt = np.zeros(N, dtype=bool)
     cap = p["max_triggers"] if p.get("use_trigger_cap", 1) else np.inf
     spread = p.get("deferral_spread", 0.0) if (regime in ("B", "C") and p.get("deferral_premium_on", 0)) else 0.0
 
@@ -58,6 +59,10 @@ def simulate(params, scenario, regime="A", version=1, draws=None, forced_hits=No
         g = economy.growth(p, d_t, d_prev)
         b_prev, bc_prev, bo_prev = out["b"][:, t - 1], out["bc"][:, t - 1], out["bo"][:, t - 1]
         pd = economy.primary_deficit(p, scenario["pd_bar"], recon, b_prev)
+        if p.get("no_surplus_rule", 0):
+            # once total debt has been negative, the government stops running surpluses (pd floored at 0)
+            no_debt = no_debt | (b_prev < 0)
+            pd = np.where(no_debt, np.maximum(pd, 0.0), pd)
         reff, xbind = debt.effective_rate(p, version, out["reff"][:, t - 1], b_prev, out["gfn"][:, t - 1])
 
         susp, rem, count = regimes.suspension_mask(regime, d_t, rem, count, p["D_trig"], K, cap)

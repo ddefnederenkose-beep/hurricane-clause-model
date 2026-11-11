@@ -63,7 +63,7 @@ def main():
 
     if not a.no_figures:
         t2 = time.time()
-        plots.CAPTIONS.clear()
+        plots.CAPTIONS.clear(); plots.QA.clear()
         for v in (1, 2):
             data = {}
             for dn, dsg in designs.items():
@@ -84,7 +84,13 @@ def main():
         plots.design_heatmaps(d, figs, N, T, seed)
         plots.design_heatmaps(d, figs, N, T, seed, "benefit_peak_gfn6_mean", "reduction in mean peak GFN over t..t+5 (pp of GDP)", "peak6", 1.0)
         plots.write_captions(figs)
+        nfig, nissue = plots.qa_report(figs)
+        print(f"\nFigure QA: {nfig} figures, {nissue} issue(s) (see outputs/figures/QA_REPORT.md)")
         print(f"\nFigures written to outputs/figures ({len(plots.CAPTIONS)} files, {time.time()-t2:.0f}s)")
+    ptab = docs_gen.status_table(params, scenarios, designs)
+    ptab.to_csv(tables / "placeholder_status.csv", index=False)
+    print("\nPARAMETER STATUS TABLE (replace values top-down; set status to VERIFIED once sourced)")
+    print(ptab.to_string(index=False, max_colwidth=70))
     docs_gen.update_methods(ROOT / "docs" / "METHODS.md")
     print(f"Finished in {time.time() - t0:.1f}s")
 

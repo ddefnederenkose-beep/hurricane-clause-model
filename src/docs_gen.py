@@ -36,3 +36,21 @@ def update_methods(path):
     if START in s and END in s:
         a, b = s.index(START), s.index(END)
         p.write_text(s[:a + len(START)] + "\n" + build_table() + s[b:])
+
+
+def status_table(params=None, scenarios=None, designs=None):
+    """Flat table of every parameter: name, value, source, status (for the console and outputs/tables)."""
+    import pandas as pd
+    rows = []
+    for k, v in _rows(config.CAL_PATH, "parameters").items():
+        rows.append((k, v["value"], v.get("source") or "", v["status"]))
+    for sname, d in _rows(config.SCN_PATH, "scenarios").items():
+        for k in ("b_0", "pd_bar", "lambda"):
+            if k in d:
+                rows.append((f"{sname}.{k}", d[k]["value"], d[k].get("source") or "", d[k]["status"]))
+    for dname, d in _rows(config.DES_PATH, "designs").items():
+        for k, v in d["overrides"].items():
+            rows.append((f"{dname}.{k}", v["value"], v.get("source") or "", v["status"]))
+    df = pd.DataFrame(rows, columns=["parameter", "value", "source", "status"])
+    df["value"] = df["value"].map(str)   # exact values (no float rounding in the printout)
+    return df

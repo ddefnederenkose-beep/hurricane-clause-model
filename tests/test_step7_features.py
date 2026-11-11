@@ -50,3 +50,14 @@ def test_experiment4_scoped_to_default_repay_rule():
     ok = experiments.experiment_npv_relief(P(defer_repay_years=2), scen, d, 1, n_paths=200, horizon=30,
                                            allow_nondefault_repay=True)
     assert len(ok) == 2
+
+
+def test_no_surplus_rule_floors_primary_balance_once_debt_negative():
+    p = P(**{"lambda": 0.0}, no_surplus_rule=1)
+    scen = {"name": "t", "b_0": 8.0, "pd_bar": -4.0}
+    on = simulate.simulate(p, scen, "A", 1, forced_hits={}, n_paths=1, horizon=30)
+    off = simulate.simulate({**p, "no_surplus_rule": 0}, scen, "A", 1, forced_hits={}, n_paths=1, horizon=30)
+    first = int(np.argmax(on["b"][0] < 0))           # first year with negative debt
+    assert first > 0
+    assert (on["pd"][0, first + 1:] >= 0).all() and (off["pd"][0, first + 1:] < 0).all()
+    np.testing.assert_array_equal(on["pd"][0, 1:first + 1], off["pd"][0, 1:first + 1])   # unchanged before the trigger

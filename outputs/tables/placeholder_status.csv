@@ -1,0 +1,45 @@
+parameter,value,source,status
+lambda,0.1,,PLACEHOLDER_VERIFY
+mu_D,2.302585092994046,,PLACEHOLDER_VERIFY
+sigma_D,1.0,,PLACEHOLDER_VERIFY
+D_max,200.0,,PLACEHOLDER_VERIFY
+D_trig,5.0,,PLACEHOLDER_VERIFY
+g_bar,0.02,,PLACEHOLDER_VERIFY
+phi,0.15,,PLACEHOLDER_VERIFY
+psi,0.5,,PLACEHOLDER_VERIFY
+kappa,0.3,,PLACEHOLDER_VERIFY
+R,3.0,,PLACEHOLDER_VERIFY
+r_bar,0.03,,PLACEHOLDER_VERIFY
+r_safe,0.03,,PLACEHOLDER_VERIFY
+M,8.0,,PLACEHOLDER_VERIFY
+s,0.6,,PLACEHOLDER_VERIFY
+K,2.0,,PLACEHOLDER_VERIFY
+theta_b,0.0005,,PLACEHOLDER_VERIFY
+theta_G,0.002,,PLACEHOLDER_VERIFY
+b_bar,60.0,,PLACEHOLDER_VERIFY
+GFN_bar,15.0,,PLACEHOLDER_VERIFY
+defer_repay_years,8.0,,PLACEHOLDER_VERIFY
+GFN_margin,5.0,,PLACEHOLDER_VERIFY
+max_triggers,3.0,"Grenada 2015 bond terms, Asonuma et al. 2017",PLACEHOLDER_VERIFY
+use_trigger_cap,1.0,"Grenada 2015 bond terms, Asonuma et al. 2017",PLACEHOLDER_VERIFY
+deferral_spread,0.0025,"proxy for delay-risk pricing, cf. Mallucci 2022",PLACEHOLDER_VERIFY
+deferral_premium_on,0.0,"proxy for delay-risk pricing, cf. Mallucci 2022",PLACEHOLDER_VERIFY
+no_surplus_rule,0.0,,PLACEHOLDER_VERIFY
+x_max,0.1,,PLACEHOLDER_VERIFY
+GFN_crit,15.0,,PLACEHOLDER_VERIFY
+rho,0.0,,PLACEHOLDER_VERIFY
+b_star,60.0,,PLACEHOLDER_VERIFY
+grenada_like.b_0,65.0,,PLACEHOLDER_VERIFY
+grenada_like.pd_bar,-2.0,,PLACEHOLDER_VERIFY
+grenada_like.lambda,0.051,"Mallucci 2022, NOAA-based major-hurricane frequency, Grenada",PLACEHOLDER_VERIFY
+high_debt.b_0,110.0,,PLACEHOLDER_VERIFY
+high_debt.pd_bar,1.0,,PLACEHOLDER_VERIFY
+grenada_like_lambda_010.b_0,65.0,,PLACEHOLDER_VERIFY
+grenada_like_lambda_010.pd_bar,-2.0,,PLACEHOLDER_VERIFY
+grenada_like_lambda_010.lambda,0.1,,PLACEHOLDER_VERIFY
+grenada_style.s,0.3,,PLACEHOLDER_VERIFY
+grenada_style.K,1.0,,PLACEHOLDER_VERIFY
+grenada_style.defer_repay_years,8.0,,PLACEHOLDER_VERIFY
+barbados_style.s,0.9,,PLACEHOLDER_VERIFY
+barbados_style.K,2.0,,PLACEHOLDER_VERIFY
+barbados_style.defer_repay_years,8.0,,PLACEHOLDER_VERIFY

@@ -1,0 +1,28 @@
+# Figure QA (programmatic, auto-generated)
+
+- **bars_v1**: OK
+- **bars_v2**: OK
+- **design_sensitivity_hcrisis_barbados_style_v1**: OK
+- **design_sensitivity_hcrisis_barbados_style_v2**: OK
+- **design_sensitivity_hcrisis_grenada_style_v1**: OK
+- **design_sensitivity_hcrisis_grenada_style_v2**: OK
+- **design_sensitivity_peak6_barbados_style_v1**: OK
+- **design_sensitivity_peak6_barbados_style_v2**: OK
+- **design_sensitivity_peak6_grenada_style_v1**: OK
+- **design_sensitivity_peak6_grenada_style_v2**: OK
+- **event_window_clean_v1**: OK
+- **event_window_clean_v2**: OK
+- **event_window_v1**: OK
+- **event_window_v2**: OK
+- **fan_grenada_like_v1**: OK
+- **fan_grenada_like_v2**: OK
+- **fan_high_debt_v1**: OK
+- **fan_high_debt_v2**: OK
+- **heatmap_barbados_style_v1**: OK
+- **heatmap_barbados_style_v2**: OK
+- **heatmap_grenada_style_v1**: OK
+- **heatmap_grenada_style_v2**: OK
+- **sample_path_grenada_like_barbados_style**: OK
+- **sample_path_grenada_like_grenada_style**: OK
+- **sample_path_high_debt_barbados_style**: OK
+- **sample_path_high_debt_grenada_style**: OK
