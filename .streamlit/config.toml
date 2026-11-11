@@ -1,0 +1,30 @@
+# Apple-inspired light theme for the Streamlit demo (app.py).
+[client]
+toolbarMode = "minimal"
+
+[theme]
+base = "light"
+primaryColor = "#0071E3"
+backgroundColor = "#F5F5F7"
+secondaryBackgroundColor = "#E8E8ED"
+textColor = "#1D1D1F"
+linkColor = "#0066CC"
+borderColor = "#D2D2D7"
+redColor = "#D70015"
+greenColor = "#248A3D"
+orangeColor = "#B25000"
+blueColor = "#0071E3"
+font = "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', 'Segoe UI', Roboto, Arial, sans-serif"
+headingFont = "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', 'Segoe UI', Roboto, Arial, sans-serif"
+baseFontSize = 16
+headingFontWeights = [600, 600, 600]
+headingFontSizes = ["2.5rem", "1.375rem", "1.0625rem"]
+baseRadius = "10px"
+buttonRadius = "980px"
+showWidgetBorder = false
+
+[theme.sidebar]
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#E8E8ED"
+borderColor = "#E8E8ED"
+headingFontSizes = ["1.25rem", "0.9375rem", "0.875rem"]
