@@ -1,6 +1,5 @@
-numpy
-pandas
-matplotlib
-pyyaml
-pytest
-streamlit
+numpy>=2.0
+pandas>=2.2
+matplotlib>=3.8
+pyyaml>=6.0
+streamlit>=1.40
