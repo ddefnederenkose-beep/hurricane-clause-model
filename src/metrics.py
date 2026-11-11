@@ -14,9 +14,20 @@ def event_peak_gfn(sim: dict, d_trig: float, window: int = 2) -> np.ndarray:
     return win[D[:, :n_start] >= d_trig]
 
 
+def _finite_or_nan(x):
+    """Median years to cross 150% of GDP; NaN means fewer than half the paths ever cross within T."""
+    return float(x) if np.isfinite(x) else np.nan
+
+
 def _peak_stats(peaks, tag):
     return {f"peak_gfn{tag}_mean": float(peaks.mean()) if peaks.size else np.nan,
             f"peak_gfn{tag}_p95": float(np.percentile(peaks, 95)) if peaks.size else np.nan}
+
+
+def years_to_cross(b: np.ndarray, threshold: float) -> np.ndarray:
+    """First year t in 1..T with b_t > threshold, per path (np.inf if never)."""
+    above = b[:, 1:] > threshold
+    return np.where(above.any(axis=1), above.argmax(axis=1) + 1.0, np.inf)
 
 
 def summarize(sim: dict, params: dict, baseline_gfn=None) -> dict:
@@ -43,6 +54,8 @@ def summarize(sim: dict, params: dict, baseline_gfn=None) -> dict:
         "p_bT_gt100": float((bT > 100).mean()),
         "p_b_gt100_any": float((b > 100).any(axis=1).mean()),
         "share_paths_negative_debt": float((b < 0).any(axis=1).mean()),
+        "share_cross_b150": float(np.isfinite(years_to_cross(sim["b"], 150.0)).mean()),
+        "median_years_to_b150": _finite_or_nan(np.median(years_to_cross(sim["b"], 150.0))),
         "share_pathyears_cap_binds": float(sim["x_bind"][:, 1:].mean()),
         "share_paths_cap_ever": float((sim["x_bind"][:, 1:] > 0).any(axis=1).mean()),
     })

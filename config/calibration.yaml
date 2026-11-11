@@ -107,7 +107,7 @@ parameters:
     value: 8
     source: ""
     status: PLACEHOLDER_VERIFY
-    meaning: "years over which deferred principal (defbal) is repaid after a deferral (default = M, so post-window GFN of B equals A)"
+    meaning: "ECONOMIC DESIGN PARAMETER: years over which deferred principal (defbal) is repaid after a deferral. = M gives post-window GFN of B equal to A (no hump); shorter than M creates a repayment hump. Set from the actual clause terms (remaining life of the instrument)."
   GFN_margin:
     value: 5
     source: ""
