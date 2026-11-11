@@ -29,6 +29,10 @@ def main():
     print(exp1.to_string(index=False))
     print(f"\nShare of paths with negative debt, by scenario (A): "
           + ", ".join(f"{r.scenario}={r.share_paths_negative_debt:.3f}" for r in exp1[exp1.regime == 'A'].itertuples()))
+    exp2 = experiments.experiment_baseline(params, scenarios, draws, version=2, n_paths=N, horizon=T)
+    exp2.to_csv(tables / "exp2_endogenous_premium_v2.csv", index=False)
+    print("\nExperiment 2: endogenous risk premium (Version 2), same hurricane draws")
+    print(exp2.to_string(index=False))
     print(f"Finished in {time.time() - t0:.1f}s")
 
 

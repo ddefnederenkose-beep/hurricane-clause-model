@@ -103,6 +103,16 @@ parameters:
     source: ""
     status: PLACEHOLDER_VERIFY
     meaning: "GFN/GDP threshold above which the premium rises (Version 2 only)"
+  defer_repay_years:
+    value: 8
+    source: ""
+    status: PLACEHOLDER_VERIFY
+    meaning: "years over which deferred principal (defbal) is repaid after a deferral (default = M, so post-window GFN of B equals A)"
+  GFN_margin:
+    value: 5
+    source: ""
+    status: PLACEHOLDER_VERIFY
+    meaning: "hurricane-attributable liquidity crisis: GFN exceeds the no-hurricane (lambda=0) baseline path by more than this many pp of GDP"
   x_max:
     # Added by the model builder (not in the original spec): without a cap the linear premium makes
     # debt explode numerically (r-g grows with b). Documented in docs/DECISIONS.md.

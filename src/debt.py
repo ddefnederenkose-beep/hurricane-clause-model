@@ -27,17 +27,22 @@ def initial_gfn(p: dict, scenario: dict, version: int = 1):
 
 def risk_premium(p: dict, b_prev, gfn_prev):
     """x_t = theta_b*max(0, b_{t-1}-b_bar) + theta_G*max(0, GFN_{t-1}-GFN_bar)."""
-    x = p["theta_b"] * np.maximum(0.0, b_prev - p["b_bar"]) + p["theta_G"] * np.maximum(0.0, gfn_prev - p["GFN_bar"])
+    x = risk_premium_uncapped(p, b_prev, gfn_prev)
     return np.minimum(x, p["x_max"])  # cap: keeps explosive debt spirals finite (see DECISIONS.md)
 
 
+def risk_premium_uncapped(p: dict, b_prev, gfn_prev):
+    return p["theta_b"] * np.maximum(0.0, b_prev - p["b_bar"]) + p["theta_G"] * np.maximum(0.0, gfn_prev - p["GFN_bar"])
+
+
 def effective_rate(p: dict, version: int, reff_prev, b_prev, gfn_prev):
-    """Version 1: constant r_bar. Version 2: the market rate r_safe + x_t only applies to the 1/M of the stock
+    """Returns (r_eff, premium_cap_binds). Version 1: constant r_bar. Version 2: the market rate r_safe + x_t only applies to the 1/M of the stock
     that is newly issued/rolled over, so r_eff_t = (1-1/M) r_eff_{t-1} + (1/M)(r_safe + x_t)."""
     if version == 1:
-        return np.full_like(b_prev, p["r_bar"], dtype=float)
-    m = p["r_safe"] + risk_premium(p, b_prev, gfn_prev)
-    return (1.0 - 1.0 / p["M"]) * reff_prev + m / p["M"]
+        return np.full_like(b_prev, p["r_bar"], dtype=float), np.zeros(b_prev.shape, dtype=bool)
+    xu = risk_premium_uncapped(p, b_prev, gfn_prev)
+    m = p["r_safe"] + np.minimum(xu, p["x_max"])
+    return (1.0 - 1.0 / p["M"]) * reff_prev + m / p["M"], xu >= p["x_max"]
 
 
 def scheduled_service(stock_prev, r, g, M):

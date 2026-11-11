@@ -32,7 +32,7 @@ def simulate(params, scenario, regime="A", version=1, draws=None, forced_hits=No
     M, K, R = p["M"], int(p["K"]), int(p["R"])
 
     keys = ["b", "bc", "bo", "reff", "gfn", "pd", "g", "r", "interest", "amort", "catchup",
-            "skipped", "forgiven", "q"]
+            "skipped", "forgiven", "q", "x_bind"]
     out = {k: np.full((N, T + 1), np.nan) for k in keys}
     out["suspended"] = np.zeros((N, T + 1), dtype=bool)
     Dpad = np.concatenate([np.zeros((N, max(R, 2))), D], axis=1)  # no hurricanes before year 1
@@ -45,7 +45,7 @@ def simulate(params, scenario, regime="A", version=1, draws=None, forced_hits=No
     out["bo"][:, 0] = (1 - p["s"]) * b0
     out["reff"][:, 0] = reff0
     out["gfn"][:, 0] = gfn0
-    out["q"][:, 0] = 0.0
+    out["q"][:, 0] = 0.0   # q = deferred principal balance (defbal) of Regime B
     rem = np.zeros(N, dtype=int)
 
     for t in range(1, T + 1):
@@ -55,25 +55,27 @@ def simulate(params, scenario, regime="A", version=1, draws=None, forced_hits=No
         g = economy.growth(p, d_t, d_prev)
         b_prev, bc_prev, bo_prev = out["b"][:, t - 1], out["bc"][:, t - 1], out["bo"][:, t - 1]
         pd = economy.primary_deficit(p, scenario["pd_bar"], recon, b_prev)
-        reff = debt.effective_rate(p, version, out["reff"][:, t - 1], b_prev, out["gfn"][:, t - 1])
+        reff, xbind = debt.effective_rate(p, version, out["reff"][:, t - 1], b_prev, out["gfn"][:, t - 1])
 
         susp, rem = regimes.suspension_mask(regime, d_t, rem, p["D_trig"], K)
-        int_c, am_c = debt.scheduled_service(bc_prev, reff, g, M)
+        int_c, _ = debt.scheduled_service(bc_prev, reff, g, M)
         int_o, am_o = debt.scheduled_service(bo_prev, reff, g, M)
-        sp = regimes.service_split(regime, susp, int_c, am_c, out["q"][:, t - 1], reff, g, M)
+        sp = regimes.service_split(regime, susp, bc_prev, int_c, out["q"][:, t - 1], g, M,
+                                   p.get("defer_repay_years", M))
 
         share = debt.pd_allocation_share(bc_prev, b_prev, p["s"])
         bc = debt.stock_step(bc_prev, reff, g, share * pd, sp["forgiven"])
         bo = debt.stock_step(bo_prev, reff, g, (1 - share) * pd)
 
         interest = int_o + sp["pay_int"]
-        amort = am_o + sp["pay_am"]
-        out["interest"][:, t], out["amort"][:, t], out["catchup"][:, t] = interest, amort, sp["catch"]
-        out["gfn"][:, t] = pd + interest + amort + sp["catch"]
+        amort = am_o + sp["pay_am"]   # incl. repayment of deferred principal
+        out["interest"][:, t], out["amort"][:, t], out["catchup"][:, t] = interest, amort, sp["defer_repay"]  # catchup is a memo item, already inside amort
+        out["gfn"][:, t] = pd + interest + amort
         out["pd"][:, t], out["g"][:, t], out["r"][:, t], out["reff"][:, t] = pd, g, reff, reff
         out["bc"][:, t], out["bo"][:, t], out["b"][:, t] = bc, bo, bc + bo
-        out["skipped"][:, t], out["forgiven"][:, t], out["q"][:, t] = sp["skipped"], sp["forgiven"], sp["q"]
+        out["skipped"][:, t], out["forgiven"][:, t], out["q"][:, t] = sp["skipped"], sp["forgiven"], sp["defbal"]
         out["suspended"][:, t] = susp
+        out["x_bind"][:, t] = xbind
         rem = np.maximum(rem - 1, 0)
 
     out["D"] = D

@@ -42,8 +42,8 @@ def test7_gfn_accounting(regime, version):
     p = P(**{"lambda": 0.2})
     sim = simulate.simulate(p, HIGH, regime, version, n_paths=300, seed=3)
     s = slice(1, None)
-    np.testing.assert_allclose(sim["gfn"][:, s], sim["pd"][:, s] + sim["interest"][:, s] + sim["amort"][:, s]
-                               + sim["catchup"][:, s], rtol=0, atol=1e-12)
+    np.testing.assert_allclose(sim["gfn"][:, s], sim["pd"][:, s] + sim["interest"][:, s] + sim["amort"][:, s],
+                               rtol=0, atol=1e-12)
     if regime == "A":  # independent recomputation of scheduled service
         b_prev, g, r = sim["b"][:, :-1], sim["g"][:, s], sim["r"][:, s]
         expect = sim["pd"][:, s] + (r + 1 / p["M"]) * b_prev / (1 + g)
