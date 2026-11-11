@@ -1,0 +1,26 @@
+# Starting conditions. Units: % of GDP as plain numbers. A negative pd_bar is a primary surplus.
+scenarios:
+  grenada_like:
+    description: "moderate debt, small primary surplus (a liquidity problem only)"
+    b_0:
+      value: 65
+      source: ""
+      status: PLACEHOLDER_VERIFY
+      meaning: "initial debt/GDP"
+    pd_bar:
+      value: -2
+      source: ""
+      status: PLACEHOLDER_VERIFY
+      meaning: "baseline primary deficit/GDP (negative = surplus)"
+  high_debt:
+    description: "debt above 100% of GDP, persistent primary deficit (a solvency problem)"
+    b_0:
+      value: 110
+      source: ""
+      status: PLACEHOLDER_VERIFY
+      meaning: "initial debt/GDP"
+    pd_bar:
+      value: 1
+      source: ""
+      status: PLACEHOLDER_VERIFY
+      meaning: "baseline primary deficit/GDP (positive = deficit)"

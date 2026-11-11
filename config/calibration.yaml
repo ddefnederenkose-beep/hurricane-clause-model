@@ -1,0 +1,133 @@
+# Calibration for the hurricane-clause Monte Carlo model.
+# Units: damage D, debt b, primary deficit pd, GFN are in % of GDP expressed as plain numbers (10 = 10%).
+#        Rates (r, g, theta*) and shares are decimals (0.03 = 3%). theta_b, theta_G are decimal rate per
+#        percentage point of debt / GFN above threshold.
+# EVERY value below is a PLACEHOLDER until the group enters a sourced value and flips `status` to VERIFIED.
+
+parameters:
+  lambda:
+    value: 0.10
+    source: ""
+    status: PLACEHOLDER_VERIFY
+    meaning: "annual probability of a major hurricane"
+  mu_D:
+    # ln(10): median damage = 10% of GDP. To be refit to EM-DAT data by the group.
+    value: 2.302585092994046
+    source: ""
+    status: PLACEHOLDER_VERIFY
+    meaning: "lognormal location parameter of damage (median damage = exp(mu_D) % of GDP)"
+  sigma_D:
+    # sigma = 1.0 gives a 95th percentile near 52% of GDP. Real Caribbean events have exceeded 100-200% of GDP
+    # (Grenada 2004, Dominica 2017), which is why D_max = 200. To be refit to EM-DAT data.
+    value: 1.0
+    source: ""
+    status: PLACEHOLDER_VERIFY
+    meaning: "lognormal scale parameter of damage (fat right tail)"
+  D_max:
+    value: 200
+    source: ""
+    status: PLACEHOLDER_VERIFY
+    meaning: "cap on damage, % of GDP"
+  D_trig:
+    value: 5
+    source: ""
+    status: PLACEHOLDER_VERIFY
+    meaning: "clause trigger threshold, % of GDP damage (proxy for a parametric trigger)"
+  g_bar:
+    value: 0.02
+    source: ""
+    status: PLACEHOLDER_VERIFY
+    meaning: "trend real GDP growth"
+  phi:
+    value: 0.15
+    source: ""
+    status: PLACEHOLDER_VERIFY
+    meaning: "output loss per unit of damage: growth falls by phi*D/100 in the hit year"
+  psi:
+    value: 0.5
+    source: ""
+    status: PLACEHOLDER_VERIFY
+    meaning: "share of lost output recovered the following year through rebuilding"
+  kappa:
+    value: 0.30
+    source: ""
+    status: PLACEHOLDER_VERIFY
+    meaning: "share of damage financed by the budget"
+  R:
+    value: 3
+    source: ""
+    status: PLACEHOLDER_VERIFY
+    meaning: "years over which reconstruction spending is spread"
+  r_bar:
+    value: 0.03
+    source: ""
+    status: PLACEHOLDER_VERIFY
+    meaning: "real effective interest rate, Version 1 (exogenous, constant)"
+  r_safe:
+    value: 0.03
+    source: ""
+    status: PLACEHOLDER_VERIFY
+    meaning: "safe real rate, Version 2 (premium is added on top)"
+  M:
+    value: 8
+    source: ""
+    status: PLACEHOLDER_VERIFY
+    meaning: "average maturity in years (1/M of each stock matures per year)"
+  s:
+    value: 0.60
+    source: ""
+    status: PLACEHOLDER_VERIFY
+    meaning: "initial share of debt covered by the clause"
+  K:
+    value: 2
+    source: ""
+    status: PLACEHOLDER_VERIFY
+    meaning: "deferral length in years"
+  theta_b:
+    value: 0.0005
+    source: ""
+    status: PLACEHOLDER_VERIFY
+    meaning: "risk premium per pp of debt/GDP above b_bar (Version 2 only)"
+  theta_G:
+    value: 0.002
+    source: ""
+    status: PLACEHOLDER_VERIFY
+    meaning: "risk premium per pp of GFN/GDP above GFN_bar (Version 2 only)"
+  b_bar:
+    value: 60
+    source: ""
+    status: PLACEHOLDER_VERIFY
+    meaning: "debt/GDP threshold above which the premium rises (Version 2 only)"
+  GFN_bar:
+    value: 15
+    source: ""
+    status: PLACEHOLDER_VERIFY
+    meaning: "GFN/GDP threshold above which the premium rises (Version 2 only)"
+  x_max:
+    # Added by the model builder (not in the original spec): without a cap the linear premium makes
+    # debt explode numerically (r-g grows with b). Documented in docs/DECISIONS.md.
+    value: 0.10
+    source: ""
+    status: PLACEHOLDER_VERIFY
+    meaning: "cap on the risk premium x_t (decimal, 0.10 = 10pp); numerical/economic backstop, Version 2 only"
+  GFN_crit:
+    value: 15
+    source: ""
+    status: PLACEHOLDER_VERIFY
+    meaning: "liquidity-crisis threshold, GFN as % of GDP"
+  rho:
+    value: 0.0
+    source: ""
+    status: PLACEHOLDER_VERIFY
+    meaning: "fiscal reaction of primary deficit to debt above target (off by default)"
+  b_star:
+    value: 60
+    source: ""
+    status: PLACEHOLDER_VERIFY
+    meaning: "debt target used by the fiscal reaction rule"
+
+# Simulation settings (not economic calibration)
+simulation:
+  T: 30
+  N: 10000
+  seed: 42
