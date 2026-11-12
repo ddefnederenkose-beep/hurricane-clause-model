@@ -1,7 +1,7 @@
 import numpy as np
 from src import experiments, hurricanes, metrics, simulate
 from src.grenada import grenada_relief
-from tests.helpers import P, GREN, HIGH, SCEN
+from tests.helpers import P, PD, GREN, HIGH, SCEN
 
 
 def test_grenada_relief_toy_numbers_not_real_data():
@@ -23,14 +23,14 @@ def test_years_to_cross():
 
 
 def test_experiment4_relief_equals_discounted_suspended_service():
-    p = P()
+    p = PD()
     d = hurricanes.draw_noise(5, 400, 30)
     df = experiments.experiment_npv_relief(p, SCEN, d, version=1, n_paths=400, horizon=30)  # asserts internally
     assert (df.n_spells > 0).all()
 
 
 def test_single_event_relief_matches_deterministic_run():
-    p = P(**{"lambda": 0.0})
+    p = PD(**{"lambda": 0.0})
     B = simulate.simulate(p, GREN, "B", 1, forced_hits={5: 30.0}, n_paths=1, horizon=30)
     pv, pct = experiments._spells(B, "skipped", p["r_bar"], p["D_trig"])
     assert pv.size == 1 and pv[0] > 0 and pct[0] > 0

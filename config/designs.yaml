@@ -1,39 +1,43 @@
-# Named clause designs. Each design overrides calibration parameters; the three-trigger cap is global (calibration.yaml).
-# All values are placeholders until the group enters sourced clause terms.
+# Named clause designs. Each design overrides calibration parameters; the three-trigger cap and the repayment rule are global (calibration.yaml).
+# Contract terms: Asonuma et al. 2017 IMF WP/17/171 App. II p.51 and Box 2; Ho & Fontana (2021) EMRJ 11 pp.7-8. Deferred interest is capitalised in both.
 designs:
   grenada_style:
-    description: "low covered share, ~1 year of service deferred per trigger, three-trigger cap, repayment over remaining maturity"
+    description: "Grenada 2015 clause: ~1 year of service deferred per trigger, three-trigger cap, deferred amounts repaid over the remaining term"
     overrides:
       s:
-        value: 0.30
-        source: ""
-        status: PLACEHOLDER_VERIFY
-        meaning: "share of debt covered (low)"
+        value: 0.1
+        source: "Grenada MoF Debt Report 2024 App.1 p.16 and App.2; IMF CR 25/39 (Beryl deferral: bond US$12m = 0.9% GDP); Reuters via Claims Journal (about US$5m Taiwan Ex-Im and others)"
+        status: CALIBRATED
+        meaning: "share of total debt (= share of total debt service) covered by the clause"
+        note: "CALIBRATED: register range 0.07-0.11. International bonds EC$189.8m of EC$2,731m public debt = 6.9%; Beryl deferral about US$17m vs 2024 debt service EC$420m = US$156m = 0.11. Multilaterals hold 66.8% of external central-government debt and have no clause."
       K:
         value: 1
-        source: ""
-        status: PLACEHOLDER_VERIFY
-        meaning: "years of service deferred per trigger"
+        source: "Ho & Fontana (2021) pp.7-8; IMF CR 25/39 p.5 para 7"
+        status: SOURCED
+        meaning: "years of service deferred per trigger (0.5 or 1 year in the contract; Beryl used 1 year: Nov 2024 + May 2025)"
       defer_repay_years:
-        value: 8
-        source: ""
-        status: PLACEHOLDER_VERIFY
-        meaning: "repayment over the remaining maturity (placeholder = M)"
+        value: 5
+        source: "Asonuma et al. 2017 App. II p.51; Ho & Fontana p.8"
+        status: CALIBRATED
+        meaning: "years over which deferred principal is repaid (the remaining term)"
+        note: "CALIBRATED: remaining term to May 2030 is about 5 years after Beryl. OPEN conflict in the register: equal instalments over the remaining term (Asonuma; Ho & Fontana) vs a lump sum added to the principal due at maturity in 2030 (IMF CR 25/39; CR 26/9 Box 1 fn.1 p.7); check the bond terms or the MoF notice."
   barbados_style:
-    description: "covered share ~0.9+, K = 2 years, same trigger cap, repayment over remaining maturity"
+    description: "Barbados 2018/19 clause: 2 years of service deferred per trigger, three-trigger cap, remaining amortisations increased pro rata"
     overrides:
       s:
-        value: 0.90
-        source: ""
-        status: PLACEHOLDER_VERIFY
-        meaning: "share of debt covered (high)"
+        value: 0.8
+        source: "GlobalCapital (news): around 80% of Barbados' total debt has this clause"
+        status: CALIBRATED
+        meaning: "share of total debt (= share of total debt service) covered by the clause"
+        note: "TODO: confirm with an official source (IMF CR 19/370). Ho & Fontana p.8 says 'nearly their entire debt stock' (domestic)."
       K:
         value: 2
-        source: ""
-        status: PLACEHOLDER_VERIFY
+        source: "Ho & Fontana (2021) pp.7-8"
+        status: SOURCED
         meaning: "years of service deferred per trigger"
       defer_repay_years:
-        value: 8
-        source: ""
-        status: PLACEHOLDER_VERIFY
-        meaning: "repayment over the remaining maturity (placeholder = M)"
+        value: 5
+        source: "none"
+        status: ASSUMPTION
+        meaning: "years over which deferred principal is repaid"
+        note: "ASSUMPTION: the value 5 is UNSOURCED for Barbados (copied from Grenada). Real contract: remaining amortisations increased pro rata over the remaining life (Asonuma App. II p.51; Ho & Fontana p.8). Same OPEN conflict as for Grenada."

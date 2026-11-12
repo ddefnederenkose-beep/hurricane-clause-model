@@ -7,9 +7,10 @@ def test1_no_hurricanes_closed_form():
     p = P(**{"lambda": 0.0})
     for scen in (GREN, HIGH):
         sim = simulate.simulate(p, scen, "A", 1, n_paths=5, horizon=30, seed=1)
+        pe = config.scenario_params(p, scen)      # scenario-level r_bar override applies
         b = scen["b_0"]
         for t in range(1, 31):
-            b = (1 + p["r_bar"]) / (1 + p["g_bar"]) * b + scen["pd_bar"]
+            b = (1 + pe["r_bar"]) / (1 + pe["g_bar"]) * b + scen["pd_bar"]
             np.testing.assert_allclose(sim["b"][:, t], b, rtol=1e-13, atol=1e-12)
 
 

@@ -6,7 +6,7 @@ Flow variables at index 0 are NaN except gfn[:,0] (initial GFN, used only by the
 from __future__ import annotations
 import numpy as np
 from . import debt, economy, hurricanes, regimes
-from .config import check_units
+from .config import check_units, scenario_params
 
 
 def simulate(params, scenario, regime="A", version=1, draws=None, forced_hits=None,
@@ -18,7 +18,7 @@ def simulate(params, scenario, regime="A", version=1, draws=None, forced_hits=No
     forced_hits : {year: damage_pct_gdp}. Explicit deterministic injection hook: REPLACES the random hurricane
                   process (all paths get exactly these hits, nothing else). Used by tests and the video sample path.
     """
-    p = params
+    p = scenario_params(params, scenario)   # scenario-level overrides (damage law, kappa, r_bar, r_safe)
     check_units(p, scenario)
     if forced_hits is not None:
         D = np.zeros((n_paths, horizon))
@@ -47,6 +47,7 @@ def simulate(params, scenario, regime="A", version=1, draws=None, forced_hits=No
     out["gfn"][:, 0] = gfn0
     out["q"][:, 0] = 0.0   # q = deferred principal balance (defbal) of Regime B
     rem = np.zeros(N, dtype=int)
+    n_rem = np.full(N, float(p.get("defer_repay_years", M)))   # equal-instalment counter (reset to m_rep while deferring)
     count = np.zeros(N, dtype=int)
     no_debt = np.zeros(N, dtype=bool)
     cap = p["max_triggers"] if p.get("use_trigger_cap", 1) else np.inf
@@ -70,7 +71,8 @@ def simulate(params, scenario, regime="A", version=1, draws=None, forced_hits=No
         int_c, _ = debt.scheduled_service(bc_prev, rc, g, M)
         int_o, am_o = debt.scheduled_service(bo_prev, reff, g, M)
         sp = regimes.service_split(regime, susp, bc_prev, int_c, out["q"][:, t - 1], g, M,
-                                   p.get("defer_repay_years", M))
+                                   p.get("defer_repay_years", M), p.get("repay_rule", "declining_balance"), n_rem)
+        n_rem = sp["n_rem"]
 
         share = debt.pd_allocation_share(bc_prev, b_prev, p["s"])
         bc = debt.stock_step(bc_prev, rc, g, share * pd, sp["forgiven"])

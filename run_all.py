@@ -16,6 +16,7 @@ def main():
     scenarios, ph_s = config.load_scenarios()
     designs, ph_d = config.load_designs()
     print(config.placeholder_warning(ph + ph_s + ph_d))
+    print("Parameter status counts:", config.status_counts(), "(VERIFIED is reserved for the group)")
     main_sc = config.main_scenarios(scenarios)
     for s in scenarios.values():
         config.check_units(params, s)
@@ -52,11 +53,13 @@ def main():
     e4 = []
     for dn, dsg in designs.items():
         for v in (1, 2):
-            df = experiments.experiment_npv_relief(config.design_params(params, dsg), main_sc, draws, v, N, T)
+            df = experiments.experiment_npv_relief(config.design_params(params, dsg), main_sc, draws, v, N, T,
+                                                   allow_nondefault_repay=True)   # baseline rule is equal_instalments, not the identity's scope
             df.insert(0, "design", dn); e4.append(df)
     e4 = pd.concat(e4); e4.to_csv(tables / "exp4_npv_relief.csv", index=False)
     print("\nExperiment 4 (version 1 shown): B = PV of deferred cash flows (timing relief; net transfer ~ 0), "
-          "C = PV of debt relief (net transfer). Identity check PV(B deferred) = PV(A svc) - PV(B svc) passed (v1, default repay rule).")
+          "C = PV of debt relief (net transfer). Run with the override flag: the identity PV(B deferred) = PV(A svc) - PV(B svc) "
+          "is NOT checked under the baseline repay rule (see net_pv_advantage_vs_A column).")
     print(e4[e4.version == 1][["design", "scenario", "regime", "n_spells", "pv_pct_gdp_mean", "pv_pct_gdp_p95",
                                "pct_damage_mean"]].to_string(index=False))
     print("\nExperiment 5: grenada_relief() in src/grenada.py (no Grenada numbers entered).")

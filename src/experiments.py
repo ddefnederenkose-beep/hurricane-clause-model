@@ -43,13 +43,19 @@ def experiment_baseline(params, scenarios, designs, draws, version=1, n_paths=10
 
 
 # ------------------------------------------------------------------------------------------------- experiment 3
-def scenario_for_b0(b0, scenarios):
+def scenario_for_b0(b0, scenarios, params=None):
     """Heatmap scenario: initial debt b0 with the primary balance interpolated linearly between the two scenario
     anchors (grenada_like: b0=65, pd=-2 ; high_debt: b0=110, pd=+1). The debt axis therefore varies the fiscal
     stance jointly: a VULNERABILITY gradient, not a pure debt gradient (DECISIONS #20)."""
     g, h = scenarios["grenada_like"], scenarios["high_debt"]
-    pd_bar = g["pd_bar"] + (b0 - g["b_0"]) * (h["pd_bar"] - g["pd_bar"]) / (h["b_0"] - g["b_0"])
-    return {"name": f"b0={b0:.0f}", "b_0": float(b0), "pd_bar": float(pd_bar)}
+    w = (b0 - g["b_0"]) / (h["b_0"] - g["b_0"])
+    pd_bar = g["pd_bar"] + w * (h["pd_bar"] - g["pd_bar"])
+    out = {"name": f"b0={b0:.0f}", "b_0": float(b0), "pd_bar": float(pd_bar)}
+    if params is not None:   # interest rates are interpolated too, so the gradient is one of overall vulnerability
+        for k in ("r_bar", "r_safe"):
+            lo, hi = g.get(k, params[k]), h.get(k, params[k])
+            out[k] = float(lo + w * (hi - lo))
+    return out
 
 
 def _benefit(simA, simB, params, baseA, baseB=None):
@@ -68,7 +74,7 @@ def experiment_heatmaps(params, scenarios, designs, draws, versions=(1, 2), n_pa
     rows = []
     for v in versions:
         for b0 in B0_GRID:
-            scen = scenario_for_b0(b0, scenarios)
+            scen = scenario_for_b0(b0, scenarios, params)
             for lam in LAMBDA_GRID:
                 pl = {**params, "lambda": float(lam)}
                 base = baseline_gfn_path(pl, scen, v, horizon)
@@ -161,14 +167,17 @@ def experiment_npv_relief(params, scenarios, draws, version=1, n_paths=10000, ho
     gross terms. It is asserted path by path in that case. Running with another repayment speed (or the premium on)
     raises unless allow_nondefault_repay=True, in which case the assertion is skipped and B's figure is only the
     suspended service, NOT the net cash advantage over A."""
-    if (params["defer_repay_years"] != params["M"] or params.get("deferral_premium_on", 0)) \
-            and not allow_nondefault_repay:
-        raise ValueError("Experiment 4 is scoped to defer_repay_years == M and deferral_premium_on == 0. "
-                         "Pass allow_nondefault_repay=True to run it anyway (identity check is then skipped).")
-    r = params["r_bar"]
-    scoped = (version == 1 and params["defer_repay_years"] == params["M"] and not params.get("deferral_premium_on", 0))
+    default_rule = (params["defer_repay_years"] == params["M"] and params.get("repay_rule", "declining_balance") == "declining_balance"
+                    and not params.get("deferral_premium_on", 0))
+    if not default_rule and not allow_nondefault_repay:
+        raise ValueError("Experiment 4 is scoped to repay_rule == 'declining_balance', defer_repay_years == M and "
+                         "deferral_premium_on == 0. Pass allow_nondefault_repay=True to run it anyway "
+                         "(the identity check is then skipped).")
+    scoped = version == 1 and default_rule
     rows = []
     for sname, scen in scenarios.items():
+        ps = config.scenario_params(params, scen)
+        r = ps["r_bar"]                                  # discount rate: the scenario's own contractual rate
         runs = simulate.run_regimes(params, scen, version, draws=draws, n_paths=n_paths, horizon=horizon)
         A, B, C = runs["A"], runs["B"], runs["C"]
         Y = np.cumprod(1.0 + A["g"][:, 1:], axis=1)
@@ -184,6 +193,9 @@ def experiment_npv_relief(params, scenarios, draws, version=1, n_paths=10000, ho
                    "pv_pct_gdp_mean": pv_gdp.mean(), "pv_pct_gdp_median": np.median(pv_gdp),
                    "pv_pct_gdp_p5": np.percentile(pv_gdp, 5), "pv_pct_gdp_p95": np.percentile(pv_gdp, 95),
                    "identity_checked": scoped}
+            if reg == "B":   # what the override hides: net PV cash advantage of B over A per path (version 1 only)
+                svc = lambda s_: s_["interest"] + s_["amort"]
+                row["net_pv_advantage_vs_A_pct_gdp0_per_path"] = float(np.mean(_pv0(svc(A), Y, r) - _pv0(svc(B), Y, r)))
             if reg == "C":   # % of damage only for the genuine transfer
                 row.update(pct_damage_mean=pct_dmg.mean(), pct_damage_median=np.median(pct_dmg),
                            pct_damage_p5=np.percentile(pct_dmg, 5), pct_damage_p95=np.percentile(pct_dmg, 95))
@@ -223,7 +235,7 @@ def largest_jump(df, col="benefit_p_hcrisis_any"):
 
 
 # --------------------------------------------------------------------- one-at-a-time parameter influence (+-25%)
-_INT = {"R", "M", "K", "max_triggers", "defer_repay_years"}
+_INT = {"R", "K", "max_triggers", "defer_repay_years"}
 _SHARE = {"s", "psi", "kappa", "lambda"}
 _SWITCH = {"use_trigger_cap", "deferral_premium_on", "no_surplus_rule"}
 
@@ -270,14 +282,14 @@ def parameter_influence(params, scenarios, designs, draws, n=5000, T=30, pct=0.2
                      "max_cell_effect_pp": float(max(np.abs(d[0]).max(), np.abs(d[1]).max()))})
 
     for k, v in params.items():
-        if k in _SWITCH or k == "deferral_spread" or v == 0:
+        if isinstance(v, (str, bool)) or k in _SWITCH or k == "deferral_spread" or v == 0:
             continue
         sweep(k, lambda sg, k=k, v=v: ({**params, k: _perturb(k, v, sg, pct)}, scenarios, designs))
     # deferral spread is only active with the premium switch on
     sweep("deferral_spread", lambda sg: ({**params, "deferral_premium_on": 1,
           "deferral_spread": params["deferral_spread"] * (1 + sg * pct)}, scenarios, designs))
     for sn, sc in scenarios.items():
-        for k in ("b_0", "pd_bar", "lambda"):
+        for k in ("b_0", "pd_bar", "lambda") + config.SCN_PARAM_KEYS:
             if k in sc and sc[k] != 0:
                 sweep(f"{sn}.{k}", lambda sg, sn=sn, k=k: (params, {**scenarios, sn: {**scenarios[sn], k: _perturb(k, scenarios[sn][k], sg, pct)}}, designs))
     for dn, dsg in designs.items():

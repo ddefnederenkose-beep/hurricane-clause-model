@@ -1,53 +1,99 @@
 # Starting conditions. Units: % of GDP as plain numbers. A negative pd_bar is a primary surplus.
-# An optional per-scenario `lambda` overrides the global hurricane probability.
+# A scenario may override: lambda, mu_D, sigma_D, kappa, r_bar, r_safe (everything else comes from calibration.yaml).
 # role: main = used in all experiments; sensitivity = added to experiments 1-2 only.
 scenarios:
   grenada_like:
-    description: "moderate debt, small primary surplus (a liquidity problem only)"
+    description: "Grenada-like: moderate debt, primary surplus (a liquidity problem only); baseline damage/frequency set (lambda 0.051, mu_D 2.414, sigma_D 0.96) from calibration.yaml"
     role: main
     b_0:
       value: 65
-      source: ""
-      status: PLACEHOLDER_VERIFY
+      source: "IMF CR 26/9 Table 1 p.26 (2026 projection 65.8%)"
+      status: CALIBRATED
       meaning: "initial debt/GDP"
+      note: "CALIBRATED: IMF CR 26/9 (2025 Art. IV) Table 1 p.26 projects public debt incl. SOEs at 65.8% of GDP for 2026 (2024 actual 72.7%, 2025e 68.3%; central government 58.7% in 2024; Debt Report 2024 gives 71.3% at end-2024, Exec. summary p.1 / App.1 p.16). 65 = the rounded 2026 projection (JUDGMENT)."
     pd_bar:
-      value: -2
-      source: ""
-      status: PLACEHOLDER_VERIFY
+      value: -1.5
+      source: "IMF CR 26/9 (2025 Art. IV)"
+      status: SOURCED
       meaning: "baseline primary deficit/GDP (negative = surplus)"
-    lambda:
-      value: 0.051
-      source: "Mallucci 2022, NOAA-based major-hurricane frequency, Grenada"
-      status: PLACEHOLDER_VERIFY
-      meaning: "annual probability of a major hurricane for this scenario"
+      note: "IMF CR 26/9 (2025 Art. IV), Key Rules box p.12 (Fiscal Resilience Act primary-balance floor of +1.5% of GDP, projected 2027-30), Table 1 p.26. pd_bar is a primary DEFICIT (negative = surplus), so a primary surplus of 1.5% of GDP is entered as -1.5."
   high_debt:
-    description: "debt above 100% of GDP, persistent primary deficit (a solvency problem); uses the global lambda"
+    description: "high_debt: debt above 100% of GDP, persistent primary deficit (a solvency problem). b_0, pd_bar and r are UNSOURCED; it inherits Grenada's g_bar, lambda, mu_D, sigma_D, kappa, R, M"
     role: main
     b_0:
       value: 110
       source: ""
       status: PLACEHOLDER_VERIFY
       meaning: "initial debt/GDP"
+      note: "Unsourced: stylised high-debt country."
     pd_bar:
       value: 1
       source: ""
       status: PLACEHOLDER_VERIFY
       meaning: "baseline primary deficit/GDP (positive = deficit)"
+      note: "Unsourced: stylised persistent deficit."
+    r_bar:
+      value: 0.058
+      source: "none (see note)"
+      status: ASSUMPTION
+      meaning: "effective interest rate, NOMINAL (g_bar + 1 point)"
+      note: "ASSUMPTION: market-financed high-debt country; unsourced; Grenada's 2.4% reflects concessional multilateral debt."
+    r_safe:
+      value: 0.058
+      source: "set equal to this scenario's r_bar"
+      status: CALIBRATED
+      meaning: "safe rate, NOMINAL, Version 2"
+      note: "CALIBRATED: equal to r_bar so Version 2 equals Version 1 when the premium is zero."
   grenada_like_lambda_010:
-    description: "sensitivity: grenada_like with the earlier placeholder lambda = 0.10"
+    description: "sensitivity: grenada_like with the Guerson (2020) frequency and its matching damage fit (lambda 0.10, mu_D 1.012, sigma_D 1.58)"
     role: sensitivity
     b_0:
       value: 65
-      source: ""
-      status: PLACEHOLDER_VERIFY
+      source: "IMF CR 26/9 Table 1 p.26 (2026 projection 65.8%)"
+      status: CALIBRATED
       meaning: "initial debt/GDP"
+      note: "CALIBRATED: IMF CR 26/9 (2025 Art. IV) Table 1 p.26 projects public debt incl. SOEs at 65.8% of GDP for 2026 (2024 actual 72.7%, 2025e 68.3%; central government 58.7% in 2024; Debt Report 2024 gives 71.3% at end-2024, Exec. summary p.1 / App.1 p.16). 65 = the rounded 2026 projection (JUDGMENT)."
     pd_bar:
-      value: -2
-      source: ""
-      status: PLACEHOLDER_VERIFY
+      value: -1.5
+      source: "IMF CR 26/9 (2025 Art. IV)"
+      status: SOURCED
       meaning: "baseline primary deficit/GDP (negative = surplus)"
+      note: "IMF CR 26/9 (2025 Art. IV), Key Rules box p.12 (Fiscal Resilience Act primary-balance floor of +1.5% of GDP, projected 2027-30), Table 1 p.26. pd_bar is a primary DEFICIT (negative = surplus), so a primary surplus of 1.5% of GDP is entered as -1.5."
     lambda:
-      value: 0.10
-      source: ""
-      status: PLACEHOLDER_VERIFY
-      meaning: "sensitivity value only"
+      value: 0.1
+      source: "Guerson (2020) IMF WP/20/266 App.1 p.25; Fig. 1 p.23"
+      status: SOURCED
+      meaning: "annual probability for this scenario (a fiscally relevant natural disaster, NOT a hurricane-hit frequency)"
+    mu_D:
+      value: 1.012
+      source: "Fit to World Bank Grenada risk profile 2016 (AAL 0.9% GDP, 250-yr PML 43.6% GDP), cap 200%"
+      status: CALIBRATED
+      meaning: "log of the median damage given a hit (median 2.75% of GDP)"
+      note: "CALIBRATED: docs/fit.py at lambda = 0.10: median 2.751% -> mu_D = ln(2.75) = 1.012. Moves together with lambda and sigma_D."
+    sigma_D:
+      value: 1.58
+      source: "same fit"
+      status: CALIBRATED
+      meaning: "standard deviation of log damage"
+      note: "CALIBRATED: docs/fit.py at lambda = 0.10: sigma = 1.5782."
+  grenada_like_kappa_062:
+    description: "sensitivity: grenada_like with the gross budget share of damage (no netting of the CCRIF payout)"
+    role: sensitivity
+    b_0:
+      value: 65
+      source: "IMF CR 26/9 Table 1 p.26 (2026 projection 65.8%)"
+      status: CALIBRATED
+      meaning: "initial debt/GDP"
+      note: "CALIBRATED: IMF CR 26/9 (2025 Art. IV) Table 1 p.26 projects public debt incl. SOEs at 65.8% of GDP for 2026 (2024 actual 72.7%, 2025e 68.3%; central government 58.7% in 2024; Debt Report 2024 gives 71.3% at end-2024, Exec. summary p.1 / App.1 p.16). 65 = the rounded 2026 projection (JUDGMENT)."
+    pd_bar:
+      value: -1.5
+      source: "IMF CR 26/9 (2025 Art. IV)"
+      status: SOURCED
+      meaning: "baseline primary deficit/GDP (negative = surplus)"
+      note: "IMF CR 26/9 (2025 Art. IV), Key Rules box p.12 (Fiscal Resilience Act primary-balance floor of +1.5% of GDP, projected 2027-30), Table 1 p.26. pd_bar is a primary DEFICIT (negative = surplus), so a primary surplus of 1.5% of GDP is entered as -1.5."
+    kappa:
+      value: 0.62
+      source: "IMF CR 25/39 p.9 table, para 17 pp.12-13, para 8 p.7"
+      status: CALIBRATED
+      meaning: "share of damage financed by the budget, gross of insurance"
+      note: "CALIBRATED: 10.2 / 16.5 = 0.62."

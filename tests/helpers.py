@@ -11,3 +11,14 @@ DESIGNS, _ = config.load_designs()
 
 def P(**kw):
     return {**PARAMS, **kw}
+
+
+def PD(**kw):
+    """Params for the 'declining balance, repay over M' rule (the old default, the scope of experiment 4's identity)."""
+    kw.setdefault("defer_repay_years", PARAMS["M"])
+    return P(repay_rule="declining_balance", **kw)
+
+
+def eff(p, scen):
+    """Parameters as simulate() sees them (scenario overrides applied)."""
+    return config.scenario_params(p, scen)

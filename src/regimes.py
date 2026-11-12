@@ -32,27 +32,46 @@ def suspension_mask(regime: str, d_t, rem, count, d_trig: float, k: int, cap=np.
     return rem > 0, rem, count + fire
 
 
-def service_split(regime: str, susp, bc_prev, int_c, defbal_prev, g, M, m_rep):
+REPAY_RULES = ("equal_instalments", "declining_balance")
+
+
+def service_split(regime: str, susp, bc_prev, int_c, defbal_prev, g, M, m_rep, rule="declining_balance", n_rem=None):
     """Cash actually paid on covered debt plus deferral/forgiveness bookkeeping (all % of GDP_t).
 
+    Repayment rule for the deferred balance defbal (Regime B):
+      equal_instalments  equal amounts (in currency units) over m_rep years, fully cleared (Asonuma et al. 2017, App. II);
+                         the instalment counter n_rem is reset to m_rep whenever new service is deferred (re-amortised),
+                         and each paying year pays defbal/n_rem, so the balance reaches zero after m_rep years.
+      declining_balance  1/m_rep of the remaining balance each year (geometric run-off, never fully cleared).
+
     Returns dict: pay_int, pay_am (incl. repayment of defbal), defer_repay, skipped (cash service not paid
-    because of the clause), forgiven, defbal (new balance)."""
+    because of the clause), forgiven, defbal (new balance), n_rem (instalments left)."""
+    if rule not in REPAY_RULES:
+        raise ValueError(f"repay_rule must be one of {REPAY_RULES}")
     d = 1.0 + g
     pos = np.maximum(bc_prev, 0.0)
     z = np.zeros_like(pos)
+    if n_rem is None:
+        n_rem = np.full(pos.shape, float(m_rep))
     if regime == "B":
         dprev = np.minimum(defbal_prev, pos)
         reg_am = (pos - dprev) / (M * d)            # regular schedule on the non-deferred part
-        rep = dprev / (m_rep * d)                    # scheduled repayment of the deferred tranche
+        if rule == "equal_instalments":
+            n_use = np.maximum(n_rem, 1.0)
+            rep = dprev / (n_use * d)                # equal instalments in currency units; last one clears the balance
+        else:
+            rep = dprev / (m_rep * d)                # scheduled repayment of the deferred tranche
         pay_int = np.where(susp, 0.0, int_c)
         rep_paid = np.where(susp, 0.0, rep)
         pay_am = np.where(susp, 0.0, reg_am + rep)
         skipped = np.where(susp, int_c + reg_am + rep, 0.0)
         defbal = defbal_prev / d - rep_paid + np.where(susp, reg_am, 0.0)
-        return dict(pay_int=pay_int, pay_am=pay_am, defer_repay=rep_paid, skipped=skipped, forgiven=z, defbal=defbal)
+        n_new = np.where(susp, float(m_rep), np.maximum(n_rem - 1.0, 0.0))
+        return dict(pay_int=pay_int, pay_am=pay_am, defer_repay=rep_paid, skipped=skipped, forgiven=z, defbal=defbal,
+                    n_rem=n_new)
     am_c = pos / (M * d)
     if regime == "C":
         forg = np.where(susp, int_c + am_c, 0.0)
         return dict(pay_int=np.where(susp, 0.0, int_c), pay_am=np.where(susp, 0.0, am_c), defer_repay=z,
-                    skipped=z, forgiven=forg, defbal=defbal_prev)
-    return dict(pay_int=int_c, pay_am=am_c, defer_repay=z, skipped=z, forgiven=z, defbal=defbal_prev)
+                    skipped=z, forgiven=forg, defbal=defbal_prev, n_rem=n_rem)
+    return dict(pay_int=int_c, pay_am=am_c, defer_repay=z, skipped=z, forgiven=z, defbal=defbal_prev, n_rem=n_rem)

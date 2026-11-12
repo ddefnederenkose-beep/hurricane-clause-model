@@ -114,7 +114,7 @@ def get_draws(n):
 @st.cache_data(show_spinner=False)
 def run(s, K, m_rep, d_trig, b0, lam, version, n):
     p = {**PARAMS, "s": s, "K": K, "defer_repay_years": m_rep, "D_trig": d_trig}
-    scen = {**experiments.scenario_for_b0(b0, SCEN), "lambda": lam}
+    scen = {**experiments.scenario_for_b0(b0, SCEN, PARAMS), "lambda": lam}
     base = experiments.baselines(p, scen, version, T)
     out = plots.collect(p, scen, version, get_draws(n), n, T, base)
     return out, scen["pd_bar"]
