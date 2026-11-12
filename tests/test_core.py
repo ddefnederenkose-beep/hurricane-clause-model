@@ -10,7 +10,9 @@ def test1_no_hurricanes_closed_form():
         pe = config.scenario_params(p, scen)      # scenario-level r_bar override applies
         b = scen["b_0"]
         for t in range(1, 31):
-            b = (1 + pe["r_bar"]) / (1 + pe["g_bar"]) * b + scen["pd_bar"]
+            # independent iteration, including the Fiscal Resilience Act rule (surplus only while debt > b_star)
+            pd = scen["pd_bar"] if (scen["pd_bar"] >= 0 or b > pe["b_star"]) else 0.0
+            b = (1 + pe["r_bar"]) / (1 + pe["g_bar"]) * b + pd
             np.testing.assert_allclose(sim["b"][:, t], b, rtol=1e-13, atol=1e-12)
 
 

@@ -23,15 +23,15 @@ scenarios:
     b_0:
       value: 110
       source: ""
-      status: PLACEHOLDER_VERIFY
+      status: ASSUMPTION
       meaning: "initial debt/GDP"
-      note: "Unsourced: stylised high-debt country."
+      note: "Unsourced: stylised high-debt country. ASSUMPTION: modelling choice; covered by the +-25% sweep."
     pd_bar:
       value: 1
       source: ""
-      status: PLACEHOLDER_VERIFY
+      status: ASSUMPTION
       meaning: "baseline primary deficit/GDP (positive = deficit)"
-      note: "Unsourced: stylised persistent deficit."
+      note: "Unsourced: stylised persistent deficit. ASSUMPTION: modelling choice; covered by the +-25% sweep."
     r_bar:
       value: 0.058
       source: "none (see note)"

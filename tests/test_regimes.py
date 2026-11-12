@@ -42,7 +42,7 @@ def test2_no_double_counting_and_service_pv_identity_v1():
 
 
 def test3_forgiveness_accounting():
-    p = P(**{"lambda": 0.0})
+    p = P(**{"lambda": 0.0}, fra_surplus_rule=0)   # the FRA rule makes pd depend on debt, which differs between B and C
     for scen in (GREN, HIGH):
         pe = eff(p, scen)
         B = simulate.simulate(p, scen, "B", 1, forced_hits={5: 30.0}, n_paths=1, horizon=30)

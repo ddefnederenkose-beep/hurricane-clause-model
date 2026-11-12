@@ -75,7 +75,7 @@ def test_experiment4_scoped_to_default_repay_rule():
 
 
 def test_no_surplus_rule_floors_primary_balance_once_debt_negative():
-    p = P(**{"lambda": 0.0}, no_surplus_rule=1)
+    p = P(**{"lambda": 0.0}, no_surplus_rule=1, fra_surplus_rule=0)   # isolate the sticky negative-debt rule
     scen = {"name": "t", "b_0": 8.0, "pd_bar": -4.0}
     on = simulate.simulate(p, scen, "A", 1, forced_hits={}, n_paths=1, horizon=30)
     off = simulate.simulate({**p, "no_surplus_rule": 0}, scen, "A", 1, forced_hits={}, n_paths=1, horizon=30)
@@ -108,3 +108,38 @@ def test_attributable_flag_uses_regime_own_baseline_with_premium_on():
     d = hurricanes.draw_noise(1, 200, 30)
     df = experiments.experiment_baseline(p, {"g": scen}, {"barbados_style": DESIGNS["barbados_style"]}, d, 1, 200, 30)
     assert (df.p_hcrisis_any == 0).all()
+
+
+def test_fra_surplus_rule_surplus_only_above_b_star():
+    p = P(**{"lambda": 0.0})
+    assert p["fra_surplus_rule"] == 1 and p["b_star"] == 60
+    sim = simulate.simulate(p, GREN, "A", 1, forced_hits={}, n_paths=1, horizon=30)
+    b, pd = sim["b"][0], sim["pd"][0]
+    for t in range(1, 31):
+        assert pd[t] == (-1.5 if b[t - 1] > 60 else 0.0)            # surplus only while lagged debt > 60
+    assert (b[:3] > 60).sum() >= 1 and (pd[1:] == 0).any() and (pd[1:] == -1.5).any()
+    off = simulate.simulate({**p, "fra_surplus_rule": 0}, GREN, "A", 1, forced_hits={}, n_paths=1, horizon=30)
+    assert (off["pd"][0, 1:] == -1.5).all()
+
+
+def test_fra_surplus_rule_resumes_after_a_hurricane_and_ignores_deficits():
+    p = P(**{"lambda": 0.0})
+    sim = simulate.simulate(p, GREN, "A", 1, forced_hits={12: 80.0}, n_paths=1, horizon=30)
+    b, pd = sim["b"][0], sim["pd"][0]
+    assert b[12] > 60 and b[11] < 60                                  # the hit pushes debt back above the anchor ...
+    assert pd[13] <= -1.5 + p["kappa"] * 80.0 / p["R"] + 1e-9         # ... so the surplus is run again (net of reconstruction spending)
+    assert abs(pd[13] - (-1.5 + p["kappa"] * 80.0 / p["R"])) < 1e-9
+    hi = simulate.simulate(p, HIGH, "A", 1, forced_hits={}, n_paths=1, horizon=30)
+    assert (hi["pd"][0, 1:] == 1.0).all()                            # a deficit is never touched by the rule
+
+
+def test_no_placeholder_verify_left_and_assumptions_are_noted():
+    import yaml
+    _, _, ph = config.load_calibration(); _, ph_s = config.load_scenarios(); _, ph_d = config.load_designs()
+    assert ph == [] and ph_s == [] and ph_d == []
+    for fn, key in ((config.CAL_PATH, "parameters"), (config.SCN_PATH, "scenarios"), (config.DES_PATH, "designs")):
+        raw = yaml.safe_load(fn.read_text())[key]
+        entries = raw.items() if key == "parameters" else [(f"{n}.{k}", v) for n, d in raw.items() for k, v in (d.get("overrides", d)).items() if isinstance(v, dict) and "status" in v]
+        for name, v in entries:
+            if v["status"] == "ASSUMPTION":
+                assert "ASSUMPTION" in (v.get("note", "") + v.get("meaning", "")), name

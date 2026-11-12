@@ -1,47 +1,48 @@
 parameter,value,source,status,type,note,delta_minus25_pp,delta_plus25_pp,influence_pp,max_cell_effect_pp
-mu_D,2.414,"World Bank, Country Disaster Risk Profile: Grenada (2016), 1-page profile, hurricane panel (AAL 0.9% GDP; 250-yr PML 43.6% GDP; GDP US$912m); cap 200% from Asonuma et al. 2017 IMF WP/17/171 Sec. III.A, Box 2 pp.25-26 (Ivan 2004 ~200% GDP)",CALIBRATED,sourceable,,-15.507499999999999,16.46875,15.988125,20.330000000000005
-lambda,0.051,"Mallucci (2020) IFDP 1291r1, Table 1 Panel B p.9; definition fn.14 p.8; hit list Table 7 p.27",SOURCED,sourceable,used only by high_debt (grenada_like has its own),-7.895,7.21375,7.554375,10.940000000000005
-kappa,0.42,"IMF Country Report 25/39 (Grenada 2024 Art. IV): p.9 table, para 17 pp.12-13 (reconstruction capex 10.2% GDP, 2024-26); para 8 p.7 (Beryl damage 16.5% GDP; CCRIF payout US$44m = 3.2% GDP)",CALIBRATED,sourceable,,-6.89875,5.632500000000001,6.265625,8.7
-R,3,"IMF Country Report 25/39 (2024-26 reconstruction window); IMF CR 26/9 Box 1 p.7 (about 4.5% GDP spent by Jul 2025, about 6% by end-2025, continuing into 2026)",CALIBRATED,sourceable,,0.3062499999999987,-3.5037500000000006,4.944999999999999,10.22
-sigma_D,0.96,"World Bank, Country Disaster Risk Profile: Grenada (2016), 1-page profile, hurricane panel (AAL 0.9% GDP; 250-yr PML 43.6% GDP; GDP US$912m); cap 200% from Asonuma et al. 2017 IMF WP/17/171 Sec. III.A, Box 2 pp.25-26 (Ivan 2004 ~200% GDP)",CALIBRATED,sourceable,,-4.14375,2.7662499999999994,4.1475,7.449999999999998
-barbados_style.defer_repay_years,5,none,ASSUMPTION,sourceable,,4.56375,-2.1449999999999987,3.354374999999999,21.199999999999996
-barbados_style.K,2,Ho & Fontana (2021) pp.7-8,SOURCED,sourceable,,-0.9787499999999991,-3.4487499999999995,2.625,14.029999999999998
-g_bar,0.048,"IMF Country Report 26/9 (Grenada 2025 Art. IV), Table 1 p.26, 2029-30 (nominal 4.8%; real 2.7%)",SOURCED,sourceable,,2.2125000000000004,-2.0212499999999993,2.116875,6.900000000000006
-M,10.6,"Grenada Ministry of Finance, Debt Report 2024, Table 7 p.14 (average time to maturity 10.6 years in 2024; 10.4 in 2023; also IMF CR 25/39 DSA para 5 p.4)",SOURCED,sourceable,,2.2074999999999996,-1.7449999999999994,1.9812499999999988,4.5999999999999925
-high_debt.b_0,110,,PLACEHOLDER_VERIFY,sourceable,,-1.6887500000000006,1.5112499999999989,1.5999999999999996,5.35
-barbados_style.s,0.8,GlobalCapital (news): around 80% of Barbados' total debt has this clause,CALIBRATED,sourceable,,-0.9887499999999992,1.0625000000000002,1.0256249999999998,5.630000000000002
-grenada_like.b_0,65,IMF CR 26/9 Table 1 p.26 (2026 projection 65.8%),CALIBRATED,sourceable,,-0.642499999999999,0.5562500000000001,0.5993749999999995,2.0799999999999983
-phi,0.15,,PLACEHOLDER_VERIFY,sourceable,,-0.5175000000000003,0.5562499999999995,0.5368749999999999,1.5499999999999958
-psi,0.5,,PLACEHOLDER_VERIFY,sourceable,,0.5212499999999991,-0.48124999999999907,0.5012499999999991,1.4499999999999957
-theta_b,0.0005,,PLACEHOLDER_VERIFY,sourceable,Version 2 only,-0.5150000000000009,0.3062499999999996,0.41062500000000024,2.739999999999998
-b_bar,60,,PLACEHOLDER_VERIFY,sourceable,Version 2 only,0.3199999999999991,-0.2737500000000007,0.2968749999999999,1.0699999999999932
-GFN_bar,15,,PLACEHOLDER_VERIFY,sourceable,Version 2 only,-0.045000000000000595,0.010000000000000286,0.27000000000000013,1.429999999999998
-grenada_style.defer_repay_years,5,Asonuma et al. 2017 App. II p.51; Ho & Fontana p.8,CALIBRATED,sourceable,,0.37249999999999817,-0.11500000000000121,0.2437499999999997,1.2399999999999967
-D_trig,5,,PLACEHOLDER_VERIFY,sourceable,,0.17125000000000057,-0.1287500000000004,0.2337499999999989,1.3000000000000012
-grenada_like.pd_bar,-1.5,IMF CR 26/9 (2025 Art. IV),SOURCED,sourceable,,0.07625000000000028,-0.28624999999999934,0.1812499999999998,0.6599999999999995
-r_bar,0.024,"IMF Country Report 25/39 (Grenada 2024 Art. IV), DSA para 5 p.4 (effective interest rate on central government debt, 2023)",SOURCED,sourceable,,-0.1737499999999996,0.14375000000000013,0.15874999999999986,0.7399999999999962
-r_safe,0.024,set equal to r_bar (see note),CALIBRATED,sourceable,Version 2 only,-0.14375000000000013,0.16625000000000043,0.15500000000000028,0.7000000000000006
-high_debt.pd_bar,1,,PLACEHOLDER_VERIFY,sourceable,,-0.14624999999999985,0.1575,0.15187499999999993,0.8000000000000007
-grenada_style.K,1,Ho & Fontana (2021) pp.7-8; IMF CR 25/39 p.5 para 7,SOURCED,sourceable,,0.11374999999999927,-0.10375000000000072,0.14749999999999988,1.1699999999999933
-theta_G,0.002,,PLACEHOLDER_VERIFY,sourceable,Version 2 only,0.05249999999999977,-0.06000000000000033,0.13999999999999915,0.8499999999999952
-max_triggers,3,Asonuma et al. 2017 IMF WP/17/171 App. II p.51; Ho & Fontana (2021) EMRJ 11 p.8,SOURCED,sourceable,,0.042500000000001564,-0.023749999999999466,0.05437499999999956,0.23000000000000242
-grenada_style.s,0.1,Grenada MoF Debt Report 2024 App.1 p.16 and App.2; IMF CR 25/39 (Beryl deferral: bond US$12m = 0.9% GDP); Reuters via Claims Journal (about US$5m Taiwan Ex-Im and others),CALIBRATED,sourceable,,-0.04750000000000136,0.043749999999999345,0.05187500000000001,0.23000000000000242
-D_max,200,,PLACEHOLDER_VERIFY,sourceable,cap is almost never reached with sigma_D = 1,-0.0012499999999998623,0.0,0.0006249999999999312,0.009999999999998899
-s,0.6,,PLACEHOLDER_VERIFY,sourceable,global default; overridden by the designs in experiments,0.0,0.0,0.0,0.0
-K,2,,PLACEHOLDER_VERIFY,sourceable,global default; overridden by the designs,0.0,0.0,0.0,0.0
-defer_repay_years,8,,PLACEHOLDER_VERIFY,sourceable,global default; overridden by the designs,0.0,0.0,0.0,0.0
+mu_D,2.414,"World Bank, Country Disaster Risk Profile: Grenada (2016), 1-page profile, hurricane panel (AAL 0.9% GDP; 250-yr PML 43.6% GDP; GDP US$912m); cap 200% from Asonuma et al. 2017 IMF WP/17/171 Sec. III.A, Box 2 pp.25-26 (Ivan 2004 ~200% GDP)",CALIBRATED,sourceable,,-15.009999999999998,16.1475,15.57875,19.770000000000003
+lambda,0.051,"Mallucci (2020) IFDP 1291r1, Table 1 Panel B p.9; definition fn.14 p.8; hit list Table 7 p.27",SOURCED,sourceable,used only by high_debt (grenada_like has its own),-7.737499999999999,6.9975000000000005,7.3675,10.940000000000005
+kappa,0.42,"IMF Country Report 25/39 (Grenada 2024 Art. IV): p.9 table, para 17 pp.12-13 (reconstruction capex 10.2% GDP, 2024-26); para 8 p.7 (Beryl damage 16.5% GDP; CCRIF payout US$44m = 3.2% GDP)",CALIBRATED,sourceable,,-6.795,5.5425,6.16875,8.399999999999999
+R,3,"IMF Country Report 25/39 (2024-26 reconstruction window); IMF CR 26/9 Box 1 p.7 (about 4.5% GDP spent by Jul 2025, about 6% by end-2025, continuing into 2026)",CALIBRATED,sourceable,,-0.6537500000000014,-3.4437500000000005,5.526249999999999,11.23
+sigma_D,0.96,"World Bank, Country Disaster Risk Profile: Grenada (2016), 1-page profile, hurricane panel (AAL 0.9% GDP; 250-yr PML 43.6% GDP; GDP US$912m); cap 200% from Asonuma et al. 2017 IMF WP/17/171 Sec. III.A, Box 2 pp.25-26 (Ivan 2004 ~200% GDP)",CALIBRATED,sourceable,,-4.1850000000000005,2.79,4.18,7.6899999999999995
+barbados_style.defer_repay_years,5,none,ASSUMPTION,sourceable,,5.2837499999999995,-2.414999999999999,3.8493749999999993,21.199999999999996
+barbados_style.K,2,Ho & Fontana (2021) pp.7-8,SOURCED,sourceable,,-0.9399999999999995,-4.2562500000000005,3.0093750000000004,17.25
+g_bar,0.048,"IMF Country Report 26/9 (Grenada 2025 Art. IV), Table 1 p.26, 2029-30 (nominal 4.8%; real 2.7%)",SOURCED,sourceable,,0.7925000000000005,-1.41875,2.3581250000000007,6.900000000000006
+M,10.6,"Grenada Ministry of Finance, Debt Report 2024, Table 7 p.14 (average time to maturity 10.6 years in 2024; 10.4 in 2023; also IMF CR 25/39 DSA para 5 p.4)",SOURCED,sourceable,,2.214999999999999,-1.8187499999999996,2.0218749999999988,4.5999999999999925
+high_debt.b_0,110,,ASSUMPTION,sourceable,,-1.6887500000000006,1.5112499999999989,1.5999999999999996,5.35
+barbados_style.s,0.8,GlobalCapital (news): around 80% of Barbados' total debt has this clause,CALIBRATED,sourceable,,-1.1112499999999994,1.1924999999999994,1.1518749999999995,5.630000000000002
+phi,0.15,,ASSUMPTION,sourceable,,-0.5637500000000006,0.5899999999999992,0.5768749999999999,1.5499999999999958
+psi,0.5,,ASSUMPTION,sourceable,,0.526249999999999,-0.5237499999999992,0.524999999999999,1.4499999999999957
+grenada_like.b_0,65,IMF CR 26/9 Table 1 p.26 (2026 projection 65.8%),CALIBRATED,sourceable,,0.7975000000000007,0.024999999999999675,0.4800000000000002,1.7800000000000011
+theta_b,0.0005,,ASSUMPTION,sourceable,Version 2 only,-0.4837500000000012,0.29749999999999954,0.41812500000000014,2.739999999999998
+b_bar,60,,ASSUMPTION,sourceable,Version 2 only,0.2587499999999989,-0.21625000000000083,0.2799999999999997,1.0699999999999932
+grenada_style.defer_repay_years,5,Asonuma et al. 2017 App. II p.51; Ho & Fontana p.8,CALIBRATED,sourceable,,0.38624999999999843,-0.1625000000000012,0.2743749999999998,1.2399999999999967
+GFN_bar,15,,ASSUMPTION,sourceable,Version 2 only,-0.045000000000000595,0.010000000000000286,0.27000000000000013,1.429999999999998
+grenada_style.K,1,Ho & Fontana (2021) pp.7-8; IMF CR 25/39 p.5 para 7,SOURCED,sourceable,,0.23374999999999924,-0.20625000000000054,0.2449999999999999,1.1699999999999933
+D_trig,5,,ASSUMPTION,sourceable,,0.17625000000000035,-0.12749999999999984,0.234374999999999,1.3000000000000012
+grenada_like.pd_bar,-1.5,IMF CR 26/9 (2025 Art. IV),SOURCED,sourceable,,0.2799999999999997,-0.046249999999999764,0.18312499999999995,0.9999999999999981
+high_debt.pd_bar,1,,ASSUMPTION,sourceable,,-0.14624999999999985,0.1575,0.15187499999999993,0.8000000000000007
+theta_G,0.002,,ASSUMPTION,sourceable,Version 2 only,0.05249999999999977,-0.06000000000000033,0.13999999999999915,0.8499999999999952
+max_triggers,3,Asonuma et al. 2017 IMF WP/17/171 App. II p.51; Ho & Fontana (2021) EMRJ 11 p.8,SOURCED,sourceable,,0.12625000000000067,-0.05374999999999894,0.11124999999999885,0.47999999999999987
+r_bar,0.024,"IMF Country Report 25/39 (Grenada 2024 Art. IV), DSA para 5 p.4 (effective interest rate on central government debt, 2023)",SOURCED,sourceable,,-0.00874999999999973,-0.1424999999999999,0.07562499999999982,0.6699999999999984
+grenada_style.s,0.1,Grenada MoF Debt Report 2024 App.1 p.16 and App.2; IMF CR 25/39 (Beryl deferral: bond US$12m = 0.9% GDP); Reuters via Claims Journal (about US$5m Taiwan Ex-Im and others),CALIBRATED,sourceable,,-0.035000000000001,0.03749999999999934,0.04875000000000018,0.23000000000000242
+r_safe,0.024,set equal to r_bar (see note),CALIBRATED,sourceable,Version 2 only,0.013749999999999873,0.05124999999999991,0.03249999999999989,0.22000000000000075
+D_max,200,,ASSUMPTION,sourceable,cap is almost never reached with sigma_D = 1,-0.0012499999999998623,0.0,0.0006249999999999312,0.009999999999998899
+s,0.6,,ASSUMPTION,sourceable,global default; overridden by the designs in experiments,0.0,0.0,0.0,0.0
+K,2,,ASSUMPTION,sourceable,global default; overridden by the designs,0.0,0.0,0.0,0.0
+defer_repay_years,8,,ASSUMPTION,sourceable,global default; overridden by the designs,0.0,0.0,0.0,0.0
 GFN_crit,15,,ASSUMPTION,sourceable,"enters only the absolute crisis flag, not this metric",0.0,0.0,0.0,0.0
 repay_rule,equal_instalments,Asonuma et al. 2017 IMF WP/17/171 App. II p.51; Ho & Fontana (2021) EMRJ 11 p.8 (equal semi-annual instalments over the remaining term),SOURCED,sourceable,,,,,
-GFN_margin,5,,ASSUMPTION,judgment,,8.966249999999999,-6.775000000000001,7.870625,13.249999999999995
+GFN_margin,5,,ASSUMPTION,judgment,,9.143749999999999,-6.87,8.006874999999999,13.249999999999995
 high_debt.r_bar,0.058,none (see note),ASSUMPTION,judgment,,-1.0800000000000005,1.261249999999999,1.1706249999999998,7.189999999999996
+b_star,60,"Fiscal Resilience Act 2023, as described in IMF Country Report 26/9 (Grenada 2025 Art. IV), Key Rules box p.12",SOURCED,judgment,inactive while rho = 0,-0.6937499999999999,1.2899999999999998,0.9918749999999998,3.319999999999998
 high_debt.r_safe,0.058,set equal to this scenario's r_bar,CALIBRATED,judgment,,-1.0150000000000006,0.8899999999999991,0.9524999999999999,5.689999999999995
-x_max,0.1,,PLACEHOLDER_VERIFY,judgment,Version 2 only,-0.9637500000000008,0.5999999999999992,0.781875,6.410000000000005
-deferral_spread,0.0025,"proxy for delay-risk pricing, cf. Mallucci 2022",ASSUMPTION,judgment,evaluated with the premium switch on,0.19500000000000003,0.3212499999999997,0.2618749999999998,1.3400000000000023
-b_star,60,,PLACEHOLDER_VERIFY,judgment,inactive while rho = 0,0.0,0.0,0.0,0.0
+x_max,0.1,,ASSUMPTION,judgment,Version 2 only,-0.9637500000000008,0.5999999999999992,0.781875,6.410000000000005
+deferral_spread,0.0025,"proxy for delay-risk pricing, cf. Mallucci 2022",ASSUMPTION,judgment,evaluated with the premium switch on,0.1362499999999992,0.19499999999999934,0.22937499999999886,1.3400000000000023
+fra_surplus_rule,1,"Fiscal Resilience Act 2023, as described in IMF Country Report 26/9 (Grenada 2025 Art. IV), Key Rules box p.12",SOURCED,judgment,,0.0,0.0,0.0,0.0
 use_trigger_cap,1,Asonuma et al. 2017 IMF WP/17/171 App. II p.51; Ho & Fontana (2021) EMRJ 11 p.8,SOURCED,judgment,,,,,
-deferral_premium_on,0,"proxy for delay-risk pricing, cf. Mallucci 2022",PLACEHOLDER_VERIFY,judgment,,,,,
-no_surplus_rule,0,,PLACEHOLDER_VERIFY,judgment,,,,,
-rho,0.0,,PLACEHOLDER_VERIFY,judgment,off (0): relative sweep undefined,,,,
+deferral_premium_on,0,"proxy for delay-risk pricing, cf. Mallucci 2022",ASSUMPTION,judgment,,,,,
+no_surplus_rule,0,,ASSUMPTION,judgment,,,,,
+rho,0.0,,ASSUMPTION,judgment,off (0): relative sweep undefined,,,,
 grenada_like_lambda_010.b_0,65,IMF CR 26/9 Table 1 p.26 (2026 projection 65.8%),CALIBRATED,judgment,"sensitivity scenario, not in main experiments",,,,
 grenada_like_lambda_010.pd_bar,-1.5,IMF CR 26/9 (2025 Art. IV),SOURCED,judgment,sensitivity scenario,,,,
 grenada_like_lambda_010.lambda,0.1,Guerson (2020) IMF WP/20/266 App.1 p.25; Fig. 1 p.23,SOURCED,judgment,sensitivity scenario,,,,

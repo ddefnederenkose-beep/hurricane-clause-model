@@ -93,6 +93,11 @@ def status_counts() -> dict:
 
 
 def placeholder_warning(placeholders) -> str:
+    if not placeholders:
+        counts = status_counts()
+        return "\n".join(["=" * 78, "No PLACEHOLDER_VERIFY parameters remain. Status counts: " + str(counts),
+                          "ASSUMPTION = modelling choices (not data); CALIBRATED = our calculations; VERIFIED is reserved for the group.",
+                          "=" * 78])
     lines = ["=" * 78,
              "WARNING: the following parameters are still PLACEHOLDER_VERIFY (no source yet).",
              "Do not cite results that depend on them as empirical:",
