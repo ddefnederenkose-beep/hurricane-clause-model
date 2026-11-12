@@ -10,6 +10,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--seed", type=int, default=None)
     ap.add_argument("--no-figures", action="store_true")
+    ap.add_argument("--outdir", default=None, help="write tables/figures here instead of outputs/ (docs are then not touched)")
     a = ap.parse_args()
     t0 = time.time()
     params, sim, ph = config.load_calibration()
@@ -23,7 +24,8 @@ def main():
     seed = a.seed if a.seed is not None else sim["seed"]
     N, T = sim["N"], sim["T"]
     draws = hurricanes.draw_noise(seed, N, T)       # ONE set of hurricane histories used everywhere (CRN)
-    tables, figs = ROOT / "outputs" / "tables", ROOT / "outputs" / "figures"
+    out_root = pathlib.Path(a.outdir) if a.outdir else ROOT / "outputs"
+    tables, figs = out_root / "tables", out_root / "figures"
     tables.mkdir(parents=True, exist_ok=True)
     pd.set_option("display.width", 250, "display.max_columns", 40, "display.float_format", "{:.3f}".format)
     short = ["design", "scenario", "regime", "peak_gfn2_mean", "peak_gfn6_mean", "p_crisis_any", "p_hcrisis_any",
@@ -90,6 +92,14 @@ def main():
         nfig, nissue = plots.qa_report(figs)
         print(f"\nFigure QA: {nfig} figures, {nissue} issue(s) (see outputs/figures/QA_REPORT.md)")
         print(f"\nFigures written to outputs/figures ({len(plots.CAPTIONS)} files, {time.time()-t2:.0f}s)")
+    t4 = time.time()
+    sw = experiments.experiment_repay_sweep(params, main_sc, designs, draws, n_paths=N, horizon=T)
+    sw.to_csv(tables / "exp3_repay_sweep.csv", index=False)
+    sp = pd.concat([experiments.repay_switch_points(sw, c) for c in ("benefit_p_hcrisis_any", "benefit_p_crisis_any", "benefit_peak_gfn6_mean")])
+    sp.to_csv(tables / "exp3_repay_switch_points.csv", index=False)
+    print(f"\nRepayment-years sweep (2-12) saved ({time.time()-t4:.0f}s). Switch from harmful to helpful (years; hurricane-attributable crisis):")
+    print(sp[sp.metric == "benefit_p_hcrisis_any"][["design", "scenario", "version", "repay_rule", "switch_years", "verdict",
+                                                  "benefit_at_2y_pp", "benefit_at_12y_pp"]].to_string(index=False))
     t3 = time.time()
     rk = experiments.experiment_reconstruction_check(params, main_sc, designs, draws, n_paths=N, horizon=T)
     rk.to_csv(tables / "exp3_reconstruction_check.csv", index=False)
@@ -105,7 +115,8 @@ def main():
     print("(one-at-a-time +-25% sweep, mean |change| in pp over 2 versions x 2 scenarios x 2 designs; set status VERIFIED once sourced)")
     show = ptab[["parameter", "value", "type", "influence_pp", "delta_minus25_pp", "delta_plus25_pp", "status", "note"]]
     print(show.to_string(index=False, float_format=lambda x: f"{x:.2f}"))
-    docs_gen.update_methods(ROOT / "docs" / "METHODS.md")
+    if not a.outdir:
+        docs_gen.update_methods(ROOT / "docs" / "METHODS.md")
     print(f"Finished in {time.time() - t0:.1f}s")
 
 

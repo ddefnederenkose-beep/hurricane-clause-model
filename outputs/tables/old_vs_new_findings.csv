@@ -1,0 +1,85 @@
+finding,measure,design,scenario,version,old,new,old_cut,new_cut
+1 clause cuts peak GFN,"mean peak GFN t..t+1, % GDP",grenada_style,grenada_like,1,A 7.9 -> B 7.7,A 5.9 -> B 5.9,0.19710662756370834,0.0697576179926056
+1 clause cuts peak GFN,"mean peak GFN t..t+5, % GDP",grenada_style,grenada_like,1,A 8.6 -> B 8.4,A 6.7 -> B 6.6,0.15637708239415637,0.064592046675231
+1 clause cuts peak GFN,"mean peak GFN t..t+1, % GDP",grenada_style,high_debt,1,A 27.6 -> B 27.2,A 27.0 -> B 27.0,0.4243183439744094,-0.011560387758848378
+1 clause cuts peak GFN,"mean peak GFN t..t+5, % GDP",grenada_style,high_debt,1,A 28.1 -> B 27.9,A 27.4 -> B 27.4,0.17605135303838892,-0.05913129663231942
+1 clause cuts peak GFN,"mean peak GFN t..t+1, % GDP",barbados_style,grenada_like,1,A 7.9 -> B 1.2,A 5.9 -> B 2.7,6.629176696313163,3.1986037571236485
+1 clause cuts peak GFN,"mean peak GFN t..t+5, % GDP",barbados_style,grenada_like,1,A 8.6 -> B 8.2,A 6.7 -> B 6.8,0.38132669619760584,-0.1179742150437697
+1 clause cuts peak GFN,"mean peak GFN t..t+1, % GDP",barbados_style,high_debt,1,A 27.6 -> B 9.1,A 27.0 -> B 9.6,18.53031039954174,17.37934122275655
+1 clause cuts peak GFN,"mean peak GFN t..t+5, % GDP",barbados_style,high_debt,1,A 28.1 -> B 27.6,A 27.4 -> B 29.5,0.46514023997309195,-2.0995190963570423
+1 clause cuts peak GFN,"mean peak GFN t..t+1, % GDP",grenada_style,grenada_like,2,A 8.2 -> B 8.0,A 6.1 -> B 6.0,0.20131383333952613,0.07066877356167112
+1 clause cuts peak GFN,"mean peak GFN t..t+5, % GDP",grenada_style,grenada_like,2,A 8.9 -> B 8.7,A 6.9 -> B 6.8,0.1584235500322464,0.06533980351218016
+1 clause cuts peak GFN,"mean peak GFN t..t+1, % GDP",grenada_style,high_debt,2,A 111.2 -> B 108.9,A 89.3 -> B 89.2,2.3090840832167174,0.09368366422954466
+1 clause cuts peak GFN,"mean peak GFN t..t+5, % GDP",grenada_style,high_debt,2,A 124.0 -> B 122.1,A 98.5 -> B 98.4,1.9150013731772049,0.10309122749423238
+1 clause cuts peak GFN,"mean peak GFN t..t+1, % GDP",barbados_style,grenada_like,2,A 8.2 -> B 1.3,A 6.1 -> B 2.8,6.922198513022858,3.3144254593654416
+1 clause cuts peak GFN,"mean peak GFN t..t+5, % GDP",barbados_style,grenada_like,2,A 8.9 -> B 8.5,A 6.9 -> B 7.0,0.3903367334083896,-0.12193867284788329
+1 clause cuts peak GFN,"mean peak GFN t..t+1, % GDP",barbados_style,high_debt,2,A 111.2 -> B 33.8,A 89.3 -> B 24.9,77.3497196146823,64.40942839717475
+1 clause cuts peak GFN,"mean peak GFN t..t+5, % GDP",barbados_style,high_debt,2,A 124.0 -> B 116.9,A 98.5 -> B 100.7,7.138851221081239,-2.1684999734393102
+2 debt stock unchanged (B = A),"max |A-B| over designs x scenarios: b_T mean / median (% GDP), P(b_T>100)",all,all,1,0.0e+00 / 0.0e+00 / 0.0e+00,,,
+2 debt stock unchanged (B = A),"max |A-B| over designs x scenarios: b_T mean / median (% GDP), P(b_T>100)",all,all,1,,0.0e+00 / 0.0e+00 / 0.0e+00,,
+"2 debt stock (version 2, premium)","max |A-B| b_T mean, % GDP",all,all,2,53.32,,,
+"2 debt stock (version 2, premium)","max |A-B| b_T mean, % GDP",all,all,2,,19.62,,
+3 repayment speed decides sign,HAC benefit A-B; new rule = declining_balance,barbados_style,grenada_like,1,"switch at 6.8y (2y -34.8 pp, 12y +3.5 pp)","switch at 7.3y (2y -14.8 pp, 12y +1.8 pp)",,
+3 repayment speed decides sign,HAC benefit A-B; new rule = equal_instalments,barbados_style,grenada_like,1,"switch at 6.8y (2y -34.8 pp, 12y +3.5 pp)","switch at 7.4y (2y -14.7 pp, 12y +1.7 pp)",,
+3 repayment speed decides sign,HAC benefit A-B; new rule = declining_balance,barbados_style,grenada_like,2,"switch at 6.8y (2y -35.6 pp, 12y +3.5 pp)","switch at 7.4y (2y -15.0 pp, 12y +1.8 pp)",,
+3 repayment speed decides sign,HAC benefit A-B; new rule = equal_instalments,barbados_style,grenada_like,2,"switch at 6.8y (2y -35.6 pp, 12y +3.5 pp)","switch at 7.4y (2y -14.9 pp, 12y +1.7 pp)",,
+3 repayment speed decides sign,HAC benefit A-B; new rule = declining_balance,barbados_style,high_debt,1,"switch at 7.5y (2y -47.4 pp, 12y +14.9 pp)","switch at 9.0y (2y -37.7 pp, 12y +4.5 pp)",,
+3 repayment speed decides sign,HAC benefit A-B; new rule = equal_instalments,barbados_style,high_debt,1,"switch at 7.5y (2y -47.4 pp, 12y +14.9 pp)","switch at 9.3y (2y -37.7 pp, 12y +4.0 pp)",,
+3 repayment speed decides sign,HAC benefit A-B; new rule = declining_balance,barbados_style,high_debt,2,"switch at 4.1y (2y -3.5 pp, 12y +30.7 pp)","switch at 5.1y (2y -7.1 pp, 12y +15.0 pp)",,
+3 repayment speed decides sign,HAC benefit A-B; new rule = equal_instalments,barbados_style,high_debt,2,"switch at 4.1y (2y -3.5 pp, 12y +30.7 pp)","switch at 5.6y (2y -7.1 pp, 12y +10.8 pp)",,
+3 repayment speed decides sign,HAC benefit A-B; new rule = declining_balance,grenada_style,grenada_like,1,"switch at 5.6y (2y -1.8 pp, 12y +0.8 pp)","switch at 5.3y (2y -0.3 pp, 12y +0.1 pp)",,
+3 repayment speed decides sign,HAC benefit A-B; new rule = equal_instalments,grenada_style,grenada_like,1,"switch at 5.6y (2y -1.8 pp, 12y +0.8 pp)","switch at 6.2y (2y -0.8 pp, 12y +0.1 pp)",,
+3 repayment speed decides sign,HAC benefit A-B; new rule = declining_balance,grenada_style,grenada_like,2,"switch at 5.6y (2y -1.8 pp, 12y +0.9 pp)","switch at 5.3y (2y -0.3 pp, 12y +0.1 pp)",,
+3 repayment speed decides sign,HAC benefit A-B; new rule = equal_instalments,grenada_style,grenada_like,2,"switch at 5.6y (2y -1.8 pp, 12y +0.9 pp)","switch at 6.0y (2y -0.8 pp, 12y +0.1 pp)",,
+3 repayment speed decides sign,HAC benefit A-B; new rule = declining_balance,grenada_style,high_debt,1,"switch at 6.2y (2y -20.2 pp, 12y +4.3 pp)","switch at 4.7y (2y -1.2 pp, 12y +1.0 pp)",,
+3 repayment speed decides sign,HAC benefit A-B; new rule = equal_instalments,grenada_style,high_debt,1,"switch at 6.2y (2y -20.2 pp, 12y +4.3 pp)","switch at 5.6y (2y -2.9 pp, 12y +0.9 pp)",,
+3 repayment speed decides sign,HAC benefit A-B; new rule = declining_balance,grenada_style,high_debt,2,"switch at 3.6y (2y -2.3 pp, 12y +4.7 pp)","switch at 2.4y (2y -0.6 pp, 12y +2.0 pp)",,
+3 repayment speed decides sign,HAC benefit A-B; new rule = equal_instalments,grenada_style,high_debt,2,"switch at 3.6y (2y -2.3 pp, 12y +4.7 pp)","switch at 3.0y (2y -1.5 pp, 12y +1.9 pp)",,
+3 repayment speed decides sign,ABS benefit A-B; new rule = declining_balance,barbados_style,grenada_like,1,"switch at 5.7y (2y -9.1 pp, 12y +0.7 pp)","switch at 4.4y (2y -1.9 pp, 12y +0.4 pp)",,
+3 repayment speed decides sign,ABS benefit A-B; new rule = equal_instalments,barbados_style,grenada_like,1,"switch at 5.7y (2y -9.1 pp, 12y +0.7 pp)","switch at 4.4y (2y -1.9 pp, 12y +0.4 pp)",,
+3 repayment speed decides sign,ABS benefit A-B; new rule = declining_balance,barbados_style,grenada_like,2,"switch at 5.9y (2y -10.1 pp, 12y +0.7 pp)","switch at 4.8y (2y -2.2 pp, 12y +0.4 pp)",,
+3 repayment speed decides sign,ABS benefit A-B; new rule = equal_instalments,barbados_style,grenada_like,2,"switch at 5.9y (2y -10.1 pp, 12y +0.7 pp)","switch at 4.8y (2y -2.2 pp, 12y +0.4 pp)",,
+3 repayment speed decides sign,ABS benefit A-B; new rule = declining_balance,barbados_style,high_debt,1,"mixed/zero (2y +0.0 pp, 12y +0.0 pp)","mixed/zero (2y +0.0 pp, 12y +0.0 pp)",,
+3 repayment speed decides sign,ABS benefit A-B; new rule = equal_instalments,barbados_style,high_debt,1,"mixed/zero (2y +0.0 pp, 12y +0.0 pp)","mixed/zero (2y +0.0 pp, 12y +0.0 pp)",,
+3 repayment speed decides sign,ABS benefit A-B; new rule = declining_balance,barbados_style,high_debt,2,"mixed/zero (2y +0.0 pp, 12y +0.0 pp)","mixed/zero (2y +0.0 pp, 12y +0.0 pp)",,
+3 repayment speed decides sign,ABS benefit A-B; new rule = equal_instalments,barbados_style,high_debt,2,"mixed/zero (2y +0.0 pp, 12y +0.0 pp)","mixed/zero (2y +0.0 pp, 12y +0.0 pp)",,
+3 repayment speed decides sign,ABS benefit A-B; new rule = declining_balance,grenada_style,grenada_like,1,"switch at 3.8y (2y -0.2 pp, 12y +0.2 pp)","switch at 3.0y (2y -0.0 pp, 12y +0.0 pp)",,
+3 repayment speed decides sign,ABS benefit A-B; new rule = equal_instalments,grenada_style,grenada_like,1,"switch at 3.8y (2y -0.2 pp, 12y +0.2 pp)","switch at 4.0y (2y -0.0 pp, 12y +0.0 pp)",,
+3 repayment speed decides sign,ABS benefit A-B; new rule = declining_balance,grenada_style,grenada_like,2,"switch at 3.8y (2y -0.2 pp, 12y +0.2 pp)","always helps (2y +0.0 pp, 12y +0.0 pp)",,
+3 repayment speed decides sign,ABS benefit A-B; new rule = equal_instalments,grenada_style,grenada_like,2,"switch at 3.8y (2y -0.2 pp, 12y +0.2 pp)","switch at 2.3y (2y -0.0 pp, 12y +0.0 pp)",,
+3 repayment speed decides sign,ABS benefit A-B; new rule = declining_balance,grenada_style,high_debt,1,"mixed/zero (2y +0.0 pp, 12y +0.0 pp)","mixed/zero (2y +0.0 pp, 12y +0.0 pp)",,
+3 repayment speed decides sign,ABS benefit A-B; new rule = equal_instalments,grenada_style,high_debt,1,"mixed/zero (2y +0.0 pp, 12y +0.0 pp)","mixed/zero (2y +0.0 pp, 12y +0.0 pp)",,
+3 repayment speed decides sign,ABS benefit A-B; new rule = declining_balance,grenada_style,high_debt,2,"mixed/zero (2y +0.0 pp, 12y +0.0 pp)","mixed/zero (2y +0.0 pp, 12y +0.0 pp)",,
+3 repayment speed decides sign,ABS benefit A-B; new rule = equal_instalments,grenada_style,high_debt,2,"mixed/zero (2y +0.0 pp, 12y +0.0 pp)","mixed/zero (2y +0.0 pp, 12y +0.0 pp)",,
+4 benefit jumps at K=R,K of the largest rise in HAC benefit (R=2/3/4),barbados_style,grenada_like,1,2/3/4,2/3/4,,
+4 benefit jumps at K=R,K of the largest rise in HAC benefit (R=2/3/4),barbados_style,grenada_like,2,2/3/4,2/3/4,,
+4 benefit jumps at K=R,K of the largest rise in HAC benefit (R=2/3/4),barbados_style,high_debt,1,2/3/4,2/6/6,,
+4 benefit jumps at K=R,K of the largest rise in HAC benefit (R=2/3/4),barbados_style,high_debt,2,2/3/2,6/3/6,,
+4 benefit jumps at K=R,K of the largest rise in HAC benefit (R=2/3/4),grenada_style,grenada_like,1,2/3/4,2/3/4,,
+4 benefit jumps at K=R,K of the largest rise in HAC benefit (R=2/3/4),grenada_style,grenada_like,2,2/3/4,2/3/4,,
+4 benefit jumps at K=R,K of the largest rise in HAC benefit (R=2/3/4),grenada_style,high_debt,1,2/3/4,2/3/4,,
+4 benefit jumps at K=R,K of the largest rise in HAC benefit (R=2/3/4),grenada_style,high_debt,2,4/4/4,2/6/6,,
+5 high debt overwhelms clause,P(HAC) %: A / B / C,grenada_style,grenada_like,1,16.2 / 15.6 / 13.1,24.1 / 24.2 / 23.6,,
+5 high debt overwhelms clause,P(ABS) %: A / B / C,grenada_style,grenada_like,1,3.8 / 3.6 / 3.3,3.9 / 3.9 / 3.9,,
+5 high debt overwhelms clause,median years until debt > 150% GDP: A / B / C (nan = <50% of paths),grenada_style,grenada_like,1,nan / nan / nan,nan / nan / nan,,
+5 high debt overwhelms clause,P(HAC) %: A / B / C,grenada_style,high_debt,1,40.8 / 39.1 / 24.0,30.3 / 30.5 / 26.3,,
+5 high debt overwhelms clause,P(ABS) %: A / B / C,grenada_style,high_debt,1,100.0 / 100.0 / 100.0,100.0 / 100.0 / 100.0,,
+5 high debt overwhelms clause,median years until debt > 150% GDP: A / B / C (nan = <50% of paths),grenada_style,high_debt,1,16 / 16 / 18,17 / 17 / 18,,
+5 high debt overwhelms clause,P(HAC) %: A / B / C,barbados_style,grenada_like,1,16.2 / 14.7 / 6.4,24.1 / 26.1 / 18.1,,
+5 high debt overwhelms clause,P(ABS) %: A / B / C,barbados_style,grenada_like,1,3.8 / 3.4 / 1.6,3.9 / 3.8 / 3.0,,
+5 high debt overwhelms clause,median years until debt > 150% GDP: A / B / C (nan = <50% of paths),barbados_style,grenada_like,1,nan / nan / nan,nan / nan / nan,,
+5 high debt overwhelms clause,P(HAC) %: A / B / C,barbados_style,high_debt,1,40.8 / 36.8 / 4.2,30.3 / 45.6 / 6.6,,
+5 high debt overwhelms clause,P(ABS) %: A / B / C,barbados_style,high_debt,1,100.0 / 100.0 / 100.0,100.0 / 100.0 / 100.0,,
+5 high debt overwhelms clause,median years until debt > 150% GDP: A / B / C (nan = <50% of paths),barbados_style,high_debt,1,16 / 16 / nan,17 / 17 / 18,,
+5 high debt overwhelms clause,P(HAC) %: A / B / C,grenada_style,grenada_like,2,16.5 / 15.9 / 13.2,24.2 / 24.2 / 23.7,,
+5 high debt overwhelms clause,P(ABS) %: A / B / C,grenada_style,grenada_like,2,4.0 / 3.9 / 3.5,4.0 / 3.9 / 3.9,,
+5 high debt overwhelms clause,median years until debt > 150% GDP: A / B / C (nan = <50% of paths),grenada_style,grenada_like,2,nan / nan / nan,nan / nan / nan,,
+5 high debt overwhelms clause,P(HAC) %: A / B / C,grenada_style,high_debt,2,85.6 / 82.3 / 20.8,61.9 / 60.7 / 43.7,,
+5 high debt overwhelms clause,P(ABS) %: A / B / C,grenada_style,high_debt,2,100.0 / 100.0 / 100.0,100.0 / 100.0 / 100.0,,
+5 high debt overwhelms clause,median years until debt > 150% GDP: A / B / C (nan = <50% of paths),grenada_style,high_debt,2,7 / 7 / 7,7 / 7 / 7,,
+5 high debt overwhelms clause,P(HAC) %: A / B / C,barbados_style,grenada_like,2,16.5 / 15.0 / 6.2,24.2 / 26.2 / 17.9,,
+5 high debt overwhelms clause,P(ABS) %: A / B / C,barbados_style,grenada_like,2,4.0 / 3.6 / 1.7,4.0 / 3.9 / 3.1,,
+5 high debt overwhelms clause,median years until debt > 150% GDP: A / B / C (nan = <50% of paths),barbados_style,grenada_like,2,nan / nan / nan,nan / nan / nan,,
+5 high debt overwhelms clause,P(HAC) %: A / B / C,barbados_style,high_debt,2,85.6 / 66.0 / 2.0,61.9 / 63.1 / 2.9,,
+5 high debt overwhelms clause,P(ABS) %: A / B / C,barbados_style,high_debt,2,100.0 / 100.0 / 100.0,100.0 / 100.0 / 100.0,,
+5 high debt overwhelms clause,median years until debt > 150% GDP: A / B / C (nan = <50% of paths),barbados_style,high_debt,2,7 / 7 / 7,7 / 7 / 7,,

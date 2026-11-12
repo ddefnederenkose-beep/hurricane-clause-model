@@ -296,3 +296,40 @@ def parameter_influence(params, scenarios, designs, draws, n=5000, T=30, pct=0.2
         for k, v in dsg["overrides"].items():
             sweep(f"{dn}.{k}", lambda sg, dn=dn, k=k, v=v: (params, scenarios, {**designs, dn: {**designs[dn], "overrides": {**designs[dn]["overrides"], k: _perturb(k, v, sg, pct)}}}))
     return pd.DataFrame(rows)
+
+
+# ------------------------------------------------------------------------------ repayment-speed sweep (2..12 years)
+def experiment_repay_sweep(params, scenarios, designs, draws, n_paths=10000, horizon=30, m_grid=tuple(range(2, 13)),
+                           rules=("equal_instalments", "declining_balance"), versions=(1, 2)):
+    """Clause benefit (A minus B; positive = helps) as the repayment period of the deferred principal runs from 2 to 12
+    years, for each design's own K, s and D_trig, under both repayment rules."""
+    rows = []
+    for dname, design in designs.items():
+        p0 = config.design_params(params, design)
+        for sname, scen in scenarios.items():
+            for v in versions:
+                A = simulate.simulate(p0, scen, "A", v, draws=draws, n_paths=n_paths, horizon=horizon)
+                baseA = baseline_gfn_path(p0, scen, v, horizon, "A")
+                baseB = baseline_gfn_path(p0, scen, v, horizon, "B")
+                for rule in rules:
+                    for m in m_grid:
+                        p = {**p0, "repay_rule": rule, "defer_repay_years": m}
+                        B = simulate.simulate(p, scen, "B", v, draws=draws, n_paths=n_paths, horizon=horizon)
+                        rows.append({"design": dname, "scenario": sname, "version": v, "repay_rule": rule,
+                                     "defer_repay_years": m, **_benefit(A, B, p, baseA, baseB)})
+    return pd.DataFrame(rows)
+
+
+def repay_switch_points(df, col="benefit_p_hcrisis_any"):
+    """Repayment period (years, linear interpolation on the grid) at which the clause switches from harmful (fast
+    repayment, negative benefit) to helpful (slow repayment). NaN if the sign never changes: 'always helps' or 'always hurts'."""
+    out = []
+    for key, g in df.groupby(["design", "scenario", "version", "repay_rule"]):
+        g = g.sort_values("defer_repay_years"); m = g["defer_repay_years"].to_numpy(float); b = g[col].to_numpy(float)
+        sw = np.nan; verdict = "always helps" if (b > 1e-4).all() else ("always hurts" if (b < -1e-4).all() else "mixed/zero")
+        for i in range(len(m) - 1):
+            if b[i] < 0 <= b[i + 1]:
+                sw = m[i] + (0 - b[i]) * (m[i + 1] - m[i]) / (b[i + 1] - b[i]); verdict = "switch"; break
+        out.append({"design": key[0], "scenario": key[1], "version": key[2], "repay_rule": key[3], "metric": col,
+                    "switch_years": sw, "verdict": verdict, "benefit_at_2y_pp": 100 * b[0], "benefit_at_12y_pp": 100 * b[-1]})
+    return pd.DataFrame(out)
