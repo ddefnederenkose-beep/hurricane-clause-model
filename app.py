@@ -81,7 +81,7 @@ def load_preset():
 if "s" not in st.session_state:
     st.session_state["preset"] = "Barbados-style"
     load_preset()
-    st.session_state["lam"] = float(SCEN["grenada_like"]["lambda"])
+    st.session_state["lam"] = float(PARAMS["lambda"])   # baseline frequency 0.051 (Mallucci 2020; HURDAT2 brackets it)
 
 # ---------------------------------------------------------------- sidebar: inputs
 st.sidebar.header("Clause design")
@@ -96,9 +96,22 @@ m_rep = st.sidebar.slider("Repayment period for deferred principal (years)", 1, 
                                "than normal and create a post-window hump in financing needs.")
 d_trig = st.sidebar.slider("Trigger threshold D_trig (% of GDP damage)", 1, 30, int(PARAMS["D_trig"]),
                            help="Minimum hurricane damage, in % of GDP, that activates the clause.")
+RULES = {"Equal instalments, fully repaid (real contracts)": "equal_instalments",
+         "Declining balance (1/m of the balance per year)": "declining_balance"}
+rule_label = st.sidebar.selectbox("Repayment rule", list(RULES), index=0,
+                                  help="Equal instalments clear the deferred principal after exactly the repayment period "
+                                       "(Asonuma et al. 2017). Declining balance is the earlier sensitivity rule.")
+repay_rule = RULES[rule_label]
 st.sidebar.header("Country and hurricanes")
-b0 = st.sidebar.slider("Initial debt b0 (% of GDP)", 40, 140, int(SCEN["grenada_like"]["b_0"]))
-lam = st.sidebar.slider("Hurricane probability per year (lambda)", 0.01, 0.30, step=0.001, key="lam", format="%.3f")
+b0 = st.sidebar.slider("Initial debt b0 (% of GDP)", 40, 140, int(SCEN["grenada_like"]["b_0"]),
+                       help="65 is Grenada's 2026 projection (IMF CR 26/9). Higher values move towards the stylised, "
+                            "unsourced high-debt scenario (110): the primary balance and interest rate are interpolated.")
+lam = st.sidebar.slider("Hurricane probability per year (lambda)", 0.01, 0.30, step=0.001, key="lam", format="%.3f",
+                        help="0.051 = Mallucci (2020). HURDAT2 gives 0.044 (within 60 nm) to 0.067 (within 100 nm). "
+                             "Note: the damage size distribution is calibrated at 0.051.")
+fra = st.sidebar.checkbox("Surplus only while debt > 60% of GDP", value=bool(PARAMS["fra_surplus_rule"]),
+                          help="Fiscal Resilience Act: the 1.5% primary surplus is run only while debt exceeds 60% of GDP; "
+                               "below 60% the baseline primary balance is 0.")
 st.sidebar.header("Simulation")
 version = st.sidebar.radio("Model version", [1, 2],
                            format_func=lambda v: "1: exogenous rate" if v == 1 else "2: endogenous risk premium")
@@ -112,8 +125,9 @@ def get_draws(n):
 
 
 @st.cache_data(show_spinner=False)
-def run(s, K, m_rep, d_trig, b0, lam, version, n):
-    p = {**PARAMS, "s": s, "K": K, "defer_repay_years": m_rep, "D_trig": d_trig}
+def run(s, K, m_rep, d_trig, b0, lam, version, n, repay_rule, fra):
+    p = {**PARAMS, "s": s, "K": K, "defer_repay_years": m_rep, "D_trig": d_trig, "repay_rule": repay_rule,
+         "fra_surplus_rule": int(fra)}
     scen = {**experiments.scenario_for_b0(b0, SCEN, PARAMS), "lambda": lam}
     base = experiments.baselines(p, scen, version, T)
     out = plots.collect(p, scen, version, get_draws(n), n, T, base)
@@ -121,7 +135,7 @@ def run(s, K, m_rep, d_trig, b0, lam, version, n):
 
 
 with st.spinner("Simulating..."):
-    data, pd_bar = run(s, K, m_rep, d_trig, b0, lam, version, n_paths)
+    data, pd_bar = run(s, K, m_rep, d_trig, b0, lam, version, n_paths, repay_rule, fra)
 m = data["m"]
 dh = m["A"]["p_hcrisis_any"] - m["B"]["p_hcrisis_any"]
 se = np.sqrt(max(m["A"]["p_hcrisis_any"] * (1 - m["A"]["p_hcrisis_any"]), 1e-9) / n_paths)
@@ -134,19 +148,22 @@ def change_cell(a, b):
     return f'<td class="num {cls}">{d:+.1f}&#8239;pp</td>'.replace("-", "&minus;", 1)
 
 
+_c = config.status_counts()
+
 # ---------------------------------------------------------------- header
 st.title("Do hurricane clauses create fiscal space?")
 st.markdown('<p class="lede">A Monte Carlo debt model comparing no clause (A), a hurricane clause that defers debt '
             'service (B), and outright debt relief as a benchmark (C). Adjust the terms in the sidebar.</p>'
-            f'<p class="note">{ICON["warn"]}<span>Illustrative only. All {len(PH) + len(PH_S) + len(PH_D)} parameters '
-            'in config/ are placeholders (PLACEHOLDER_VERIFY) still awaiting sources.</span></p>',
+            f'<p class="note">{ICON["warn"]}<span>Work in progress. Parameters: {_c.get("SOURCED", 0)} sourced, '
+            f'{_c.get("CALIBRATED", 0)} calibrated by us, {_c.get("ASSUMPTION", 0)} modelling assumptions; none is '
+            'group-verified yet. The high-debt scenario is stylised and unsourced.</span></p>',
             unsafe_allow_html=True)
 
 # ---------------------------------------------------------------- verdict + risk table
 if dh < -0.005:
     verdict = ("bad", "The clause is harmful with these terms.",
-               f"Deferred amounts are repaid faster than the normal 1/M run-off (M = {M}), creating a "
-               "post-window hump in financing needs.")
+               f"Deferred amounts are repaid over {m_rep} years, faster than the normal debt run-off (M = {M:g} years), "
+               "creating a post-window hump in financing needs.")
 elif dh > 0.005:
     verdict = ("good", "The clause helps liquidity with these terms.",
                f"It lowers the hurricane-attributable crisis risk by {dh*100:.1f} percentage points.")
@@ -206,5 +223,7 @@ with st.expander("Definitions and method notes"):
         f"- **Primary balance** is interpolated with initial debt: {pd_bar:+.1f}% of GDP here (positive = deficit).\n"
         "- **Common random numbers**: the same hurricane draws hit every regime, so differences come from the "
         "regime, not from luck.\n"
-        "- **Reproducibility**: at N = 10,000 and the defaults (Barbados-style, b0 = 65, lambda = 0.051, version 1, "
-        "D_trig = 5) these numbers equal experiment 1's grenada_like rows exactly.")
+        "- **Rates and growth** are nominal (r = 2.4%, g = 4.8% for Grenada: concessional debt). The high-debt end of the b0 "
+        "slider uses r = 5.8% (an assumption).\n"
+        "- **Reproducibility**: at N = 10,000 and the defaults (Barbados-style, equal instalments over 5 years, fiscal rule on, "
+        "b0 = 65, lambda = 0.051, version 1, D_trig = 5) these numbers equal experiment 1's grenada_like rows exactly.")
