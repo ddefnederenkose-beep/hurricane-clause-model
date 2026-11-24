@@ -34,31 +34,32 @@ st.markdown("""
   h2, h3 { letter-spacing: -0.015em; }
   ::selection { background: rgba(0, 113, 227, 0.18); }
   :focus-visible { outline: 3px solid rgba(0, 113, 227, 0.45); outline-offset: 2px; }
-  .lede { color: #6E6E73; font-size: 1.0625rem; line-height: 1.5; max-width: 68ch; margin: -0.25rem 0 0.75rem; }
+  .lede { color: #6E6E73; font-size: 0.95rem; line-height: 1.45; max-width: 68ch; margin: -0.25rem 0 0.5rem; }
   .note { display: flex; gap: 0.5rem; align-items: flex-start; color: #B25000; font-size: 0.875rem; line-height: 1.45; }
   .note svg { flex: none; margin-top: 0.15rem; }
   [class*="st-key-panel"] { background: #FFFFFF; border: none !important; border-radius: 18px;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 6px 20px rgba(0, 0, 0, 0.05); padding: 1.25rem 1.5rem 1rem; }
-  .verdict { border-radius: 16px; padding: 1.25rem 1.4rem 1.1rem; margin-bottom: 0.5rem; border-left: 8px solid var(--vc); background: var(--vbg); }
+  .verdict { border-radius: 16px; padding: 0.8rem 1.1rem 0.7rem; margin-bottom: 0.25rem; border-left: 8px solid var(--vc); background: var(--vbg); }
   .verdict.good { --vc: #248A3D; --vbg: #EAF6ED; } .verdict.bad { --vc: #D70015; --vbg: #FDECEE; } .verdict.flat { --vc: #6E6E73; --vbg: #F2F2F4; }
   .verdict .head { display: flex; gap: 0.7rem; align-items: center; }
-  .verdict .head svg { flex: none; width: 34px; height: 34px; }
-  .verdict .head b { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; color: var(--vc); }
-  .verdict .big { font-size: 1.15rem; font-weight: 600; color: #1D1D1F; margin: 0.8rem 0 0.15rem; font-variant-numeric: tabular-nums; }
-  .verdict ul { margin: 0.5rem 0 0; padding-left: 1.2rem; color: #3A3A3C; line-height: 1.55; }
-  .verdict li { margin-bottom: 0.3rem; } .verdict li b { color: #1D1D1F; }
-  .verdict .def { color: #6E6E73; font-size: 0.8125rem; line-height: 1.45; margin-top: 0.7rem; }
+  .verdict .head svg { flex: none; width: 26px; height: 26px; }
+  .verdict .head b { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.015em; line-height: 1.15; color: var(--vc); }
+  .verdict .big { font-size: 0.98rem; font-weight: 600; color: #1D1D1F; margin: 0.5rem 0 0.1rem; font-variant-numeric: tabular-nums; }
+  .verdict { font-size: 0.875rem; }
+  .verdict ul { margin: 0.35rem 0 0; padding-left: 1.1rem; color: #3A3A3C; line-height: 1.45; }
+  .verdict li { margin-bottom: 0.15rem; } .verdict li b { color: #1D1D1F; }
+  .verdict .def { color: #6E6E73; font-size: 0.75rem; line-height: 1.4; margin-top: 0.45rem; }
   .hint { display: flex; gap: 0.75rem; align-items: center; background: #E8F1FD; border: 1px solid #B9D5F7; color: #0A4A9E; border-radius: 12px;
-    padding: 0.7rem 1rem; font-size: 1rem; margin: 0.25rem 0 0.75rem; }
-  .hint b { font-weight: 700; } .hint .arrow { font-size: 1.5rem; line-height: 1; }
+    padding: 0.45rem 0.8rem; font-size: 0.875rem; margin: 0.15rem 0 0.5rem; }
+  .hint b { font-weight: 700; } .hint .arrow { font-size: 1.15rem; line-height: 1; }
   table.risk, table.risk th, table.risk td, table.risk tr { border: none !important; background: transparent !important; }
   table.risk { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; margin-top: 0.5rem; }
   table.risk th { font-size: 0.8125rem; font-weight: 500; color: #6E6E73; text-align: right; padding: 0 0 0.5rem 1rem;
     border-bottom: 1px solid #E8E8ED !important; }
   table.risk th:first-child, table.risk td:first-child { text-align: left; padding-left: 0; }
-  table.risk td { text-align: right; padding: 0.85rem 0 0.85rem 1rem; border-bottom: 1px solid #E8E8ED !important; vertical-align: top; }
+  table.risk td { text-align: right; padding: 0.5rem 0 0.5rem 1rem; border-bottom: 1px solid #E8E8ED !important; vertical-align: top; }
   table.risk tr:last-child td { border-bottom: none !important; }
-  table.risk td.num { font-size: 1.5rem; font-weight: 600; letter-spacing: -0.01em; white-space: nowrap; }
+  table.risk td.num { font-size: 1.2rem; font-weight: 600; letter-spacing: -0.01em; white-space: nowrap; }
   table.risk .metric { font-weight: 600; }
   table.risk .sub { display: block; color: #6E6E73; font-size: 0.8125rem; line-height: 1.4; margin-top: 0.15rem; }
   .better { color: #248A3D; } .worse { color: #D70015; } .flat { color: #6E6E73; }
@@ -177,7 +178,7 @@ _c = config.status_counts()
 # ---------------------------------------------------------------- header
 st.title("Do hurricane clauses create fiscal space?")
 st.markdown('<p class="lede">A Monte Carlo debt model comparing no clause (A), a hurricane clause that defers debt '
-            'service (B, with the actual Grenada repayment as B&#8242;), and outright debt relief as a benchmark (C). Adjust the terms in the sidebar.</p>'
+            'service (B, with the actual Grenada repayment as B&#8242;), and outright debt relief as a benchmark (C).</p>'
             f'<p class="foot">Parameter entries: {_c.get("SOURCED", 0)} sourced, {_c.get("CALIBRATED", 0)} calibrated, '
             f'{_c.get("ASSUMPTION", 0)} assumed. The high-debt country is stylised (assumed values).</p>',
             unsafe_allow_html=True)
