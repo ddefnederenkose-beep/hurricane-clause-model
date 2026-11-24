@@ -29,7 +29,14 @@ jobs:
               wake = pg.get_by_role("button", name="Yes, get this app back up!")
               if wake.count():
                   print("app was asleep; waking it"); wake.first.click(); pg.wait_for_timeout(60000)
-              # the app is up when its title renders (inside the Streamlit iframe-free DOM)
-              ok = pg.get_by_text("Do hurricane clauses create fiscal space?").first.is_visible(timeout=60000)
-              print("app up:", ok); b.close(); sys.exit(0 if ok else 1)
+              # the app is up when its title renders (poll every frame: Streamlit may serve the app inside an iframe)
+              title, ok = "Do hurricane clauses create fiscal space?", False
+              for _ in range(45):
+                  if any(f.get_by_text(title).count() for f in pg.frames):
+                      ok = True; break
+                  pg.wait_for_timeout(2000)
+              print("app up:", ok)
+              if not ok:
+                  print("url:", pg.url, "| frames:", [f.url for f in pg.frames]); print(pg.inner_text("body")[:500])
+              b.close(); sys.exit(0 if ok else 1)
           PY
