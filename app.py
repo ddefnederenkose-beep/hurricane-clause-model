@@ -95,15 +95,15 @@ K = st.sidebar.slider("Deferral length K (years)", 0, 5, key="K",
                       help="How many years payments are deferred after a trigger.")
 d_trig = st.sidebar.slider("Trigger threshold D_trig (% of GDP damage)", 1, 30, int(PARAMS["D_trig"]),
                            help="Minimum hurricane damage, in % of GDP, that activates the clause.")
-RULES = {"Equal instalments, fully repaid (baseline)": "equal_instalments",
-         "Grenada's actual: one lump sum at strike year + 6 (B'-lump)": "lump_at_horizon",
-         "Grenada's actual: equal instalments to strike year + 6 (B'-inst)": "equal_to_horizon",
+RULES = {"Grenada's actual: one lump sum at strike year + 6 (B'-lump, baseline)": "lump_at_horizon",
          "Lump sum refinanced at the market rate (B'-lump refinanced)": "lump_refinanced",
+         "Grenada's actual: equal instalments to strike year + 6 (B'-inst)": "equal_to_horizon",
+         "Equal instalments over the repayment period (5-year case)": "equal_instalments",
          "Declining balance (1/m of the balance per year; sensitivity)": "declining_balance"}
 rule_label = st.sidebar.selectbox("Repayment rule", list(RULES), index=0,
-                                  help="Baseline: equal instalments clear the deferred principal after the repayment period "
-                                       "(Asonuma et al. 2017). B' rules follow Grenada's Beryl deferral, whose sources disagree on the "
-                                       "shape of repayment, so both readings are offered. 'Refinanced' folds the balance into ordinary "
+                                  help="Baseline (as in the brief): B'-lump, Grenada's Beryl deferral repaid in one lump sum six years after the strike (IMF 2026). "
+                                       "The sources disagree on the shape (Asonuma et al. 2017: instalments over the bond's remaining life), so both readings are offered; "
+                                       "equal instalments over the repayment period (5 years) is the sensitivity case. 'Refinanced' folds the balance into ordinary "
                                        "debt at strike year + 6 instead of paying cash (V2: at the endogenous risk premium).")
 repay_rule = RULES[rule_label]
 if repay_rule in ("lump_at_horizon", "equal_to_horizon", "lump_refinanced"):
@@ -116,8 +116,8 @@ else:
                                    "than normal and create a post-window hump in financing needs.")
 st.sidebar.header("Country and hurricanes")
 b0 = st.sidebar.slider("Initial debt b0 (% of GDP)", 40, 140, int(SCEN["grenada_like"]["b_0"]),
-                       help="65 is Grenada's 2026 projection (IMF CR 26/9). Higher values move towards the stylised, "
-                            "unsourced high-debt scenario (110): the primary balance and interest rate are interpolated.")
+                       help="65 is Grenada's 2026 projection (IMF CR 26/9). Higher values move towards the stylised "
+                            "high-debt country (110; assumed values): the primary balance and interest rate are interpolated.")
 lam = st.sidebar.slider("Hurricane probability per year (lambda)", 0.01, 0.30, step=0.001, key="lam", format="%.3f",
                         help="0.051 = Mallucci (2020). HURDAT2 gives 0.044 (within 60 nm) to 0.067 (within 100 nm). "
                              "Note: the damage size distribution is calibrated at 0.051.")
@@ -171,9 +171,8 @@ _c = config.status_counts()
 st.title("Do hurricane clauses create fiscal space?")
 st.markdown('<p class="lede">A Monte Carlo debt model comparing no clause (A), a hurricane clause that defers debt '
             'service (B, with the actual Grenada repayment as B&#8242;), and outright debt relief as a benchmark (C). Adjust the terms in the sidebar.</p>'
-            f'<p class="note">{ICON["warn"]}<span>Work in progress. Parameters: {_c.get("SOURCED", 0)} sourced, '
-            f'{_c.get("CALIBRATED", 0)} calibrated by us, {_c.get("ASSUMPTION", 0)} modelling assumptions; none is '
-            'group-verified yet. The high-debt scenario is stylised and unsourced.</span></p>',
+            f'<p class="foot">Parameter entries: {_c.get("SOURCED", 0)} sourced, {_c.get("CALIBRATED", 0)} calibrated, '
+            f'{_c.get("ASSUMPTION", 0)} assumed. The high-debt country is stylised (assumed values).</p>',
             unsafe_allow_html=True)
 
 # ---------------------------------------------------------------- verdict + risk table
@@ -254,7 +253,7 @@ with st.expander("Definitions and method notes"):
         f"*no-hurricane path of the same regime* by more than {PARAMS['GFN_margin']:g} points of GDP in at least one year of {T}.\n"
         f"- **3-point storm window**: the threshold is {CFG3['storm_window_margin']:g} points in the strike year and the year after "
         f"(when market access is most fragile) and {PARAMS['GFN_margin']:g} points in all other years. It can reverse the sign of the "
-        "high-coverage effect under the baseline repayment (see docs/RESULTS_v3.md, Table 4).\n"
+        "high-coverage effect under the baseline repayment (see the brief, section 6.1).\n"
         "- **Expected excess GFN**: the mean over paths of the sum over years of max(0, GFN - no-hurricane GFN - 5), in points of GDP.\n"
         f"- **GFN above {PARAMS['GFN_crit']:g}% of GDP**: absolute level. In the high-debt end of the b0 slider it is 100% by "
         "construction, so the relative measures are the informative ones.\n"
@@ -266,6 +265,6 @@ with st.expander("Definitions and method notes"):
         "regime, not from luck; the interval on each change is paired on those draws.\n"
         "- **Rates and growth** are nominal (r = 2.4%, g = 4.8% for Grenada: concessional debt). The high-debt end of the b0 "
         "slider uses r = 5.8% (an assumption).\n"
-        "- **Reproducibility**: at N = 10,000 and the defaults (high-coverage, equal instalments over 5 years, fiscal rule on, "
-        "b0 = 65, lambda = 0.051, version 1, D_trig = 5) the stress probabilities equal Table 1 of docs/RESULTS_v3.md (23.1% / 24.7%); "
-        "choosing B'-lump gives 52.3%.")
+        "- **Reproducibility**: at N = 10,000 and the defaults (high-coverage, B'-lump six years after the strike, fiscal rule on, "
+        "b0 = 65, lambda = 0.051, version 1, D_trig = 5) the stress probability is 23.1% without and 52.3% with the clause; "
+        "equal instalments over 5 years give 24.7%.")
