@@ -39,10 +39,18 @@ st.markdown("""
   .note svg { flex: none; margin-top: 0.15rem; }
   [class*="st-key-panel"] { background: #FFFFFF; border: none !important; border-radius: 18px;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 6px 20px rgba(0, 0, 0, 0.05); padding: 1.25rem 1.5rem 1rem; }
-  .verdict { display: flex; gap: 0.75rem; align-items: flex-start; }
-  .verdict svg { flex: none; margin-top: 0.2rem; }
-  .verdict b { display: block; font-size: 1.25rem; font-weight: 600; letter-spacing: -0.01em; color: #1D1D1F; }
-  .verdict span { color: #6E6E73; line-height: 1.45; }
+  .verdict { border-radius: 16px; padding: 1.25rem 1.4rem 1.1rem; margin-bottom: 0.5rem; border-left: 8px solid var(--vc); background: var(--vbg); }
+  .verdict.good { --vc: #248A3D; --vbg: #EAF6ED; } .verdict.bad { --vc: #D70015; --vbg: #FDECEE; } .verdict.flat { --vc: #6E6E73; --vbg: #F2F2F4; }
+  .verdict .head { display: flex; gap: 0.7rem; align-items: center; }
+  .verdict .head svg { flex: none; width: 34px; height: 34px; }
+  .verdict .head b { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; color: var(--vc); }
+  .verdict .big { font-size: 1.15rem; font-weight: 600; color: #1D1D1F; margin: 0.8rem 0 0.15rem; font-variant-numeric: tabular-nums; }
+  .verdict ul { margin: 0.5rem 0 0; padding-left: 1.2rem; color: #3A3A3C; line-height: 1.55; }
+  .verdict li { margin-bottom: 0.3rem; } .verdict li b { color: #1D1D1F; }
+  .verdict .def { color: #6E6E73; font-size: 0.8125rem; line-height: 1.45; margin-top: 0.7rem; }
+  .hint { display: flex; gap: 0.75rem; align-items: center; background: #E8F1FD; border: 1px solid #B9D5F7; color: #0A4A9E; border-radius: 12px;
+    padding: 0.7rem 1rem; font-size: 1rem; margin: 0.25rem 0 0.75rem; }
+  .hint b { font-weight: 700; } .hint .arrow { font-size: 1.5rem; line-height: 1; }
   table.risk, table.risk th, table.risk td, table.risk tr { border: none !important; background: transparent !important; }
   table.risk { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; margin-top: 0.5rem; }
   table.risk th { font-size: 0.8125rem; font-weight: 500; color: #6E6E73; text-align: right; padding: 0 0 0.5rem 1rem;
@@ -107,11 +115,12 @@ rule_label = st.sidebar.selectbox("Repayment rule", list(RULES), index=0,
                                        "debt at strike year + 6 instead of paying cash (V2: at the endogenous risk premium).")
 repay_rule = RULES[rule_label]
 if repay_rule in ("lump_at_horizon", "equal_to_horizon", "lump_refinanced"):
-    m_rep = st.sidebar.slider("Years from the strike to the due date", 1, 15, key="h_bp",
+    m_rep = st.sidebar.slider("Years from the strike to the due date", 1, 15, int(CFG3["bprime_horizon"]), key="h_bp",
                               help="6 = the 2030 bond maturity minus the 2024 strike (IMF CR 25/39). The deferred amortization, "
                                    "from the year after the suspension ends, is repaid at (lump) or through (instalments) this date.")
 else:
-    m_rep = st.sidebar.slider("Repayment period for deferred principal (years)", 1, 15, key="m_rep",
+    m_rep = st.sidebar.slider("Repayment period for deferred principal (years)", 1, 15,
+                              int(DESIGNS[LABELS[st.session_state["preset"]]]["overrides"]["defer_repay_years"]), key="m_rep",
                               help=f"M = {M} is the normal debt run-off. Below M, deferred amounts are repaid faster "
                                    "than normal and create a post-window hump in financing needs.")
 st.sidebar.header("Country and hurricanes")
@@ -157,12 +166,10 @@ PR = data["paired"]
 
 
 def change_cell(r, scale=100, unit="points", fmt="{:+.1f}"):
-    """Paired clause-minus-no-clause change with its 95% CI. Green only if the CI is entirely below 0 (lower is better)."""
+    """Change (clause minus no clause). Green only if clearly lower, red if clearly higher, grey if no clear difference."""
     d, lo, hi = r["diff"] * scale, r["lo"] * scale, r["hi"] * scale
     cls = "better" if hi < 0 else ("worse" if lo > 0 else "flat")
-    txt = (fmt.format(d) + "&#8239;" + unit).replace("-", "&minus;")
-    ci = ("95% CI [" + fmt.format(lo) + ", " + fmt.format(hi) + "]").replace("-", "&minus;")
-    return f'<td class="num {cls}">{txt}<span class="sub">{ci}</span></td>'
+    return f'<td class="num {cls}">{(fmt.format(d) + "&#8239;" + unit).replace("-", "&minus;")}</td>'
 
 
 _c = config.status_counts()
@@ -174,32 +181,67 @@ st.markdown('<p class="lede">A Monte Carlo debt model comparing no clause (A), a
             f'<p class="foot">Parameter entries: {_c.get("SOURCED", 0)} sourced, {_c.get("CALIBRATED", 0)} calibrated, '
             f'{_c.get("ASSUMPTION", 0)} assumed. The high-debt country is stylised (assumed values).</p>',
             unsafe_allow_html=True)
+st.markdown('<div class="hint"><span class="arrow">&larr;</span><span><b>Change the parameters in the sidebar.</b> '
+            'Clause terms (share covered, length, repayment rule), the country\'s starting debt, hurricane frequency and model version '
+            'are all on the left; the results below update as you move them. (On a phone, tap the arrow at the top left to open it.)</span></div>',
+            unsafe_allow_html=True)
 
 # ---------------------------------------------------------------- verdict + risk table
-st_ = PR["stress"]
-_why = {"equal_instalments": f"Deferred amounts are repaid over {m_rep} years, against a normal run-off of M = {M:g} years.",
-        "declining_balance": f"Deferred amounts run off at 1/{m_rep} of the balance per year.",
-        "lump_at_horizon": f"The whole deferred balance falls due in one payment {m_rep} years after the strike.",
-        "equal_to_horizon": f"Deferred amounts are repaid in equal instalments through year {m_rep} after the strike.",
-        "lump_refinanced": f"The deferred balance is refinanced into ordinary debt {m_rep} years after the strike."}[repay_rule]
-if st_["hi"] < 0:
-    verdict = ("good", "The clause lowers financing-stress risk with these terms.",
-               f"The paired change is {st_['diff']*100:+.1f} points (95% CI {st_['lo']*100:+.1f} to {st_['hi']*100:+.1f}). " + _why)
-elif st_["lo"] > 0:
-    verdict = ("bad", "The clause raises financing-stress risk with these terms.",
-               f"The paired change is {st_['diff']*100:+.1f} points (95% CI {st_['lo']*100:+.1f} to {st_['hi']*100:+.1f}). " + _why)
+st_, tw = PR["stress"], PR["stress_tw"]
+pa, pb, dd = st_["mean_a"] * 100, st_["mean_b"] * 100, st_["diff"] * 100
+direction = "higher" if st_["lo"] > 0 else ("lower" if st_["hi"] < 0 else None)
+kind = {"higher": "bad", "lower": "good", None: "flat"}[direction]
+head = {"bad": "The clause makes things worse with these terms.", "good": "The clause makes things better with these terms.",
+        "flat": "The clause makes no clear difference with these terms."}[kind]
+per100 = f"About <b>{abs(dd):.0f}</b> {'more' if dd > 0 else 'fewer'} out of every 100 simulated futures hit financing stress." if direction else \
+         "The two are too close to tell apart in this simulation."
+if repay_rule == "lump_at_horizon":
+    mech = (f"The deferred payments do not disappear. They come back as <b>one large payment {m_rep} years after the strike</b>.") 
+    if kind == "bad":
+        why = mech + " That single year pushes financing needs far above normal, more than the relief in the strike years was worth."
+    elif kind == "good":
+        why = mech + f" Even so, the relief in the strike years outweighs that payment with these settings."
+    else:
+        why = mech + " The relief and the later payment roughly cancel out."
+elif repay_rule == "lump_refinanced":
+    why = (f"Nothing is paid in cash {m_rep} years after the strike: the deferred balance is <b>folded into ordinary debt</b> and repaid on the normal schedule "
+           "at the market rate. The strike-year relief is kept without a repayment spike.")
+elif repay_rule == "equal_to_horizon":
+    why = (f"The deferred payments come back as <b>equal instalments through year {m_rep} after the strike</b>, so the repayment is spread out "
+           "instead of landing in one year.")
+elif repay_rule == "equal_instalments":
+    why = (f"The deferred payments come back as <b>equal instalments over {m_rep} years</b>. The normal debt run-off is {M:g} years, so repaying in "
+           f"{m_rep} adds {'extra ' if m_rep < M else 'little extra '}pressure after the suspension ends.")
 else:
-    verdict = ("flat", "The clause makes no distinguishable difference with these terms.",
-               f"The paired change is {st_['diff']*100:+.1f} points; the 95% CI ({st_['lo']*100:+.1f} to {st_['hi']*100:+.1f}) includes zero.")
-tw = PR["stress_tw"]
-if (tw["diff"] > 0) != (st_["diff"] > 0) and (tw["lo"] > 0 or tw["hi"] < 0):
-    verdict = (verdict[0], verdict[1], verdict[2] + f" Under the 3-point storm-window measure the sign is opposite ({tw['diff']*100:+.1f} points).")
+    why = f"The deferred balance runs off at 1/{m_rep} of what is left each year, so repayment is gradual."
+if kind == "bad" and repay_rule in ("equal_instalments", "declining_balance", "equal_to_horizon"):
+    why += " Relief in the strike years is smaller than the repayments that follow."
+elif kind == "good" and repay_rule in ("equal_instalments", "declining_balance", "equal_to_horizon"):
+    why += " Because repayment is slow and gentle, the relief in the strike years wins."
+lines = [f"<li><b>Why:</b> {why}</li>"]
+same = (tw["diff"] > 0) == (st_["diff"] > 0)
+twsig = tw["lo"] > 0 or tw["hi"] < 0
+tw_txt = (f"If stress right after a storm counts more (a {CFG3['storm_window_margin']:g}-point threshold in the strike year and the year after), "
+          f"the clause moves stress risk from <b>{tw['mean_a']*100:.1f}%</b> to <b>{tw['mean_b']*100:.1f}%</b> ({tw['diff']*100:+.1f} points)")
+lines.append("<li><b>Insurance view:</b> " + tw_txt + (". <b>The verdict flips</b>: the clause helps when the storm years matter most." if (twsig and not same) else ".") + "</li>")
+if kind == "bad":
+    lines.append("<li><b>Try:</b> the refinanced lump sum, or a longer repayment period, to see how repayment design changes the result.</li>")
+elif kind == "good":
+    lines.append("<li><b>Try:</b> a shorter repayment period or the one-lump-sum rule to see how fragile the benefit is.</li>")
+else:
+    lines.append("<li><b>Try:</b> a higher share covered (s) or a longer suspension (K) to see when the clause starts to matter.</li>")
+verdict_html = (f'<div class="verdict {kind}" role="status"><div class="head">{ICON[{"bad": "bad", "good": "good", "flat": "flat"}[kind]]}<b>{head}</b></div>'
+                f'<div class="big">Financing-stress risk: {pa:.1f}% without the clause &rarr; {pb:.1f}% with it ({dd:+.1f} points)</div>'
+                f'<div>{per100}</div><ul>{"".join(lines)}</ul>'
+                f'<div class="def">A <b>financing-stress episode</b> means that in at least one of the {T} simulated years, the government\'s gross financing need '
+                f'is more than {PARAMS["GFN_margin"]:g} points of GDP above what it would have been with no hurricanes. Risk is the share of 10,000 simulated '
+                f'{T}-year paths where that happens.</div></div>')
 
 with st.container(key="panel-risk"):
+    st.markdown(verdict_html, unsafe_allow_html=True)
     st.markdown(
-        '<div class="verdict" role="status">%s<div><b>%s</b><span>%s</span></div></div>'
         '<table class="risk"><thead><tr><th>Over %d years</th><th>No clause</th><th>With clause</th>'
-        '<th>Change (paired)</th></tr></thead><tbody>'
+        '<th>Change</th></tr></thead><tbody>'
         '<tr><td><span class="metric">Financing-stress episode</span><span class="sub">GFN more than %g points of GDP '
         'above the same regime\'s no-hurricane path in at least one year</span></td>'
         '<td class="num">%.1f%%</td><td class="num">%.1f%%</td>%s</tr>'
@@ -212,9 +254,9 @@ with st.container(key="panel-risk"):
         'path plus %g points, in points of GDP</span></td>'
         '<td class="num">%.1f</td><td class="num">%.1f</td>%s</tr>'
         '</tbody></table>'
-        '<p class="foot">Change = with clause minus no clause on the same hurricane draws; the 95%% interval is the paired '
-        'normal approximation at N = %s. Green: interval entirely below zero. Red: entirely above. Grey: includes zero.</p>'
-        % (ICON[verdict[0]], verdict[1], verdict[2], T, PARAMS["GFN_margin"],
+        '<p class="foot">Change = with clause minus no clause, on the same simulated hurricanes (N = %s paths). '
+        'Green: clearly lower with the clause. Red: clearly higher. Grey: no clear difference.</p>'
+        % (T, PARAMS["GFN_margin"],
            PR["stress"]["mean_a"] * 100, PR["stress"]["mean_b"] * 100, change_cell(PR["stress"]),
            CFG3["storm_window_margin"], PARAMS["GFN_margin"],
            PR["stress_tw"]["mean_a"] * 100, PR["stress_tw"]["mean_b"] * 100, change_cell(PR["stress_tw"]),
@@ -262,7 +304,7 @@ with st.expander("Definitions and method notes"):
         "one lump sum, or equal instalments. Skipped interest is capitalised into the covered stock as in the baseline.\n"
         f"- **Primary balance** is interpolated with initial debt: {pd_bar:+.1f}% of GDP here (positive = deficit).\n"
         "- **Common random numbers**: the same hurricane draws hit every regime, so differences come from the "
-        "regime, not from luck; the interval on each change is paired on those draws.\n"
+        "regime, not from luck.\n"
         "- **Rates and growth** are nominal (r = 2.4%, g = 4.8% for Grenada: concessional debt). The high-debt end of the b0 "
         "slider uses r = 5.8% (an assumption).\n"
         "- **Reproducibility**: at N = 10,000 and the defaults (high-coverage, B'-lump six years after the strike, fiscal rule on, "
