@@ -1,0 +1,5 @@
+design,scenario,version,repay_rule,metric,switch_years,verdict,benefit_at_2y_pp,benefit_at_12y_pp
+barbados_style,grenada_like,1,equal_instalments,benefit_p_hcrisis_any,5.912790697674419,switch,-21.18,3.939999999999999
+barbados_style,grenada_like,2,equal_instalments,benefit_p_hcrisis_any,5.894736842105264,switch,-21.65,3.88
+barbados_style,high_debt,1,equal_instalments,benefit_p_hcrisis_any,9.259887005649718,switch,-37.68,3.9900000000000047
+barbados_style,high_debt,2,equal_instalments,benefit_p_hcrisis_any,5.632124352331606,switch,-7.089999999999996,10.849999999999993

@@ -7,14 +7,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 import streamlit as st
 
-from src import config, experiments, hurricanes, plots
+from src import config, experiments, hurricanes, plots, simulate, v3
 
 st.set_page_config(page_title="Hurricane-clause model", layout="wide")
 PARAMS, SIM, PH = config.load_calibration()
 SCEN, PH_S = config.load_scenarios()
 DESIGNS, PH_D = config.load_designs()
 T, SEED = SIM["T"], SIM["seed"]
-LABELS = {"Grenada-style": "grenada_style", "Barbados-style": "barbados_style"}
+LABELS = {"Grenada-style (s=0.10, K=1)": "grenada_style", "High-coverage (s=0.80, K=2)": "barbados_style"}
+CFG3 = config.load_v3()   # config/v3.yaml: storm_window_margin (3 points), bprime_horizon (6 years)
 M = PARAMS["M"]
 
 # Chart chrome matched to the page theme. Regime colours stay Okabe-Ito (src/plots.py) so the
@@ -76,10 +77,11 @@ def load_preset():
     d = DESIGNS[LABELS[st.session_state["preset"]]]["overrides"]
     st.session_state["s"], st.session_state["K"] = float(d["s"]), int(d["K"])
     st.session_state["m_rep"] = int(d["defer_repay_years"])
+    st.session_state["h_bp"] = int(CFG3["bprime_horizon"])
 
 
 if "s" not in st.session_state:
-    st.session_state["preset"] = "Barbados-style"
+    st.session_state["preset"] = "High-coverage (s=0.80, K=2)"
     load_preset()
     st.session_state["lam"] = float(PARAMS["lambda"])   # baseline frequency 0.051 (Mallucci 2020; HURDAT2 brackets it)
 
@@ -91,17 +93,27 @@ s = st.sidebar.slider("Share of debt covered (s)", 0.0, 1.0, step=0.05, key="s",
                       help="Fraction of debt service that the clause defers when it triggers.")
 K = st.sidebar.slider("Deferral length K (years)", 0, 5, key="K",
                       help="How many years payments are deferred after a trigger.")
-m_rep = st.sidebar.slider("Repayment period for deferred principal (years)", 1, 15, key="m_rep",
-                          help=f"M = {M} is the normal debt run-off. Below M, deferred amounts are repaid faster "
-                               "than normal and create a post-window hump in financing needs.")
 d_trig = st.sidebar.slider("Trigger threshold D_trig (% of GDP damage)", 1, 30, int(PARAMS["D_trig"]),
                            help="Minimum hurricane damage, in % of GDP, that activates the clause.")
-RULES = {"Equal instalments, fully repaid (real contracts)": "equal_instalments",
-         "Declining balance (1/m of the balance per year)": "declining_balance"}
+RULES = {"Equal instalments, fully repaid (baseline)": "equal_instalments",
+         "Grenada's actual: one lump sum at strike year + 6 (B'-lump)": "lump_at_horizon",
+         "Grenada's actual: equal instalments to strike year + 6 (B'-inst)": "equal_to_horizon",
+         "Lump sum refinanced at the market rate (B'-lump refinanced)": "lump_refinanced",
+         "Declining balance (1/m of the balance per year; sensitivity)": "declining_balance"}
 rule_label = st.sidebar.selectbox("Repayment rule", list(RULES), index=0,
-                                  help="Equal instalments clear the deferred principal after exactly the repayment period "
-                                       "(Asonuma et al. 2017). Declining balance is the earlier sensitivity rule.")
+                                  help="Baseline: equal instalments clear the deferred principal after the repayment period "
+                                       "(Asonuma et al. 2017). B' rules follow Grenada's Beryl deferral, whose sources disagree on the "
+                                       "shape of repayment, so both readings are offered. 'Refinanced' folds the balance into ordinary "
+                                       "debt at strike year + 6 instead of paying cash (V2: at the endogenous risk premium).")
 repay_rule = RULES[rule_label]
+if repay_rule in ("lump_at_horizon", "equal_to_horizon", "lump_refinanced"):
+    m_rep = st.sidebar.slider("Years from the strike to the due date", 1, 15, key="h_bp",
+                              help="6 = the 2030 bond maturity minus the 2024 strike (IMF CR 25/39). The deferred amortization, "
+                                   "from the year after the suspension ends, is repaid at (lump) or through (instalments) this date.")
+else:
+    m_rep = st.sidebar.slider("Repayment period for deferred principal (years)", 1, 15, key="m_rep",
+                              help=f"M = {M} is the normal debt run-off. Below M, deferred amounts are repaid faster "
+                                   "than normal and create a post-window hump in financing needs.")
 st.sidebar.header("Country and hurricanes")
 b0 = st.sidebar.slider("Initial debt b0 (% of GDP)", 40, 140, int(SCEN["grenada_like"]["b_0"]),
                        help="65 is Grenada's 2026 projection (IMF CR 26/9). Higher values move towards the stylised, "
@@ -131,21 +143,26 @@ def run(s, K, m_rep, d_trig, b0, lam, version, n, repay_rule, fra):
     scen = {**experiments.scenario_for_b0(b0, SCEN, PARAMS), "lambda": lam}
     base = experiments.baselines(p, scen, version, T)
     out = plots.collect(p, scen, version, get_draws(n), n, T, base)
+    # paired clause-vs-no-clause statistics (same draws): financing-stress episode, 3-point storm-window variant, GFN > 15%, excess GFN
+    sim = {r: simulate.simulate(p, scen, r, version, draws=get_draws(n), n_paths=n, horizon=T) for r in "AB"}
+    ms = {r: v3.measures(sim[r], base[r], p, CFG3) for r in "AB"}
+    out["paired"] = {k: v3.paired(ms["A"][k], ms["B"][k]) for k in ("stress", "stress_tw", "gfn15", "excess")}
     return out, scen["pd_bar"]
 
 
 with st.spinner("Simulating..."):
     data, pd_bar = run(s, K, m_rep, d_trig, b0, lam, version, n_paths, repay_rule, fra)
 m = data["m"]
-dh = m["A"]["p_hcrisis_any"] - m["B"]["p_hcrisis_any"]
-se = np.sqrt(max(m["A"]["p_hcrisis_any"] * (1 - m["A"]["p_hcrisis_any"]), 1e-9) / n_paths)
+PR = data["paired"]
 
 
-def change_cell(a, b):
-    """Change in crisis probability from A to B, in pp. Lower is better."""
-    d = (b - a) * 100
-    cls = "flat" if abs(d) < 0.05 else ("better" if d < 0 else "worse")
-    return f'<td class="num {cls}">{d:+.1f}&#8239;pp</td>'.replace("-", "&minus;", 1)
+def change_cell(r, scale=100, unit="points", fmt="{:+.1f}"):
+    """Paired clause-minus-no-clause change with its 95% CI. Green only if the CI is entirely below 0 (lower is better)."""
+    d, lo, hi = r["diff"] * scale, r["lo"] * scale, r["hi"] * scale
+    cls = "better" if hi < 0 else ("worse" if lo > 0 else "flat")
+    txt = (fmt.format(d) + "&#8239;" + unit).replace("-", "&minus;")
+    ci = ("95% CI [" + fmt.format(lo) + ", " + fmt.format(hi) + "]").replace("-", "&minus;")
+    return f'<td class="num {cls}">{txt}<span class="sub">{ci}</span></td>'
 
 
 _c = config.status_counts()
@@ -153,40 +170,58 @@ _c = config.status_counts()
 # ---------------------------------------------------------------- header
 st.title("Do hurricane clauses create fiscal space?")
 st.markdown('<p class="lede">A Monte Carlo debt model comparing no clause (A), a hurricane clause that defers debt '
-            'service (B), and outright debt relief as a benchmark (C). Adjust the terms in the sidebar.</p>'
+            'service (B, with the actual Grenada repayment as B&#8242;), and outright debt relief as a benchmark (C). Adjust the terms in the sidebar.</p>'
             f'<p class="note">{ICON["warn"]}<span>Work in progress. Parameters: {_c.get("SOURCED", 0)} sourced, '
             f'{_c.get("CALIBRATED", 0)} calibrated by us, {_c.get("ASSUMPTION", 0)} modelling assumptions; none is '
             'group-verified yet. The high-debt scenario is stylised and unsourced.</span></p>',
             unsafe_allow_html=True)
 
 # ---------------------------------------------------------------- verdict + risk table
-if dh < -0.005:
-    verdict = ("bad", "The clause is harmful with these terms.",
-               f"Deferred amounts are repaid over {m_rep} years, faster than the normal debt run-off (M = {M:g} years), "
-               "creating a post-window hump in financing needs.")
-elif dh > 0.005:
-    verdict = ("good", "The clause helps liquidity with these terms.",
-               f"It lowers the hurricane-attributable crisis risk by {dh*100:.1f} percentage points.")
+st_ = PR["stress"]
+_why = {"equal_instalments": f"Deferred amounts are repaid over {m_rep} years, against a normal run-off of M = {M:g} years.",
+        "declining_balance": f"Deferred amounts run off at 1/{m_rep} of the balance per year.",
+        "lump_at_horizon": f"The whole deferred balance falls due in one payment {m_rep} years after the strike.",
+        "equal_to_horizon": f"Deferred amounts are repaid in equal instalments through year {m_rep} after the strike.",
+        "lump_refinanced": f"The deferred balance is refinanced into ordinary debt {m_rep} years after the strike."}[repay_rule]
+if st_["hi"] < 0:
+    verdict = ("good", "The clause lowers financing-stress risk with these terms.",
+               f"The paired change is {st_['diff']*100:+.1f} points (95% CI {st_['lo']*100:+.1f} to {st_['hi']*100:+.1f}). " + _why)
+elif st_["lo"] > 0:
+    verdict = ("bad", "The clause raises financing-stress risk with these terms.",
+               f"The paired change is {st_['diff']*100:+.1f} points (95% CI {st_['lo']*100:+.1f} to {st_['hi']*100:+.1f}). " + _why)
 else:
-    verdict = ("flat", "The clause makes little difference with these terms.",
-               "Hurricane-attributable crisis risk is about the same with and without it.")
+    verdict = ("flat", "The clause makes no distinguishable difference with these terms.",
+               f"The paired change is {st_['diff']*100:+.1f} points; the 95% CI ({st_['lo']*100:+.1f} to {st_['hi']*100:+.1f}) includes zero.")
+tw = PR["stress_tw"]
+if (tw["diff"] > 0) != (st_["diff"] > 0) and (tw["lo"] > 0 or tw["hi"] < 0):
+    verdict = (verdict[0], verdict[1], verdict[2] + f" Under the 3-point storm-window measure the sign is opposite ({tw['diff']*100:+.1f} points).")
 
 with st.container(key="panel-risk"):
     st.markdown(
-        f'<div class="verdict" role="status">{ICON[verdict[0]]}<div><b>{verdict[1]}</b><span>{verdict[2]}</span></div></div>'
-        '<table class="risk"><thead><tr><th>Crisis risk over %d years</th><th>No clause</th><th>With clause</th>'
-        '<th>Change</th></tr></thead><tbody>'
-        '<tr><td><span class="metric">Hurricane-attributable crisis</span><span class="sub">GFN rises more than %g pp '
-        'of GDP above the no-hurricane path in at least one year</span></td>'
+        '<div class="verdict" role="status">%s<div><b>%s</b><span>%s</span></div></div>'
+        '<table class="risk"><thead><tr><th>Over %d years</th><th>No clause</th><th>With clause</th>'
+        '<th>Change (paired)</th></tr></thead><tbody>'
+        '<tr><td><span class="metric">Financing-stress episode</span><span class="sub">GFN more than %g points of GDP '
+        'above the same regime\'s no-hurricane path in at least one year</span></td>'
         '<td class="num">%.1f%%</td><td class="num">%.1f%%</td>%s</tr>'
-        '<tr><td><span class="metric">Absolute crisis</span><span class="sub">GFN above %g%% of GDP in at least one '
-        'year</span></td><td class="num">%.1f%%</td><td class="num">%.1f%%</td>%s</tr>'
+        '<tr><td><span class="metric">Stress, 3-point storm window</span><span class="sub">Threshold %g points in the strike '
+        'year and the year after, %g points in other years</span></td>'
+        '<td class="num">%.1f%%</td><td class="num">%.1f%%</td>%s</tr>'
+        '<tr><td><span class="metric">GFN above %g%% of GDP</span><span class="sub">In at least one year (absolute level)</span></td>'
+        '<td class="num">%.1f%%</td><td class="num">%.1f%%</td>%s</tr>'
+        '<tr><td><span class="metric">Expected excess GFN</span><span class="sub">Sum over years of GFN above the no-hurricane '
+        'path plus %g points, in points of GDP</span></td>'
+        '<td class="num">%.1f</td><td class="num">%.1f</td>%s</tr>'
         '</tbody></table>'
-        '<p class="foot">Simulation error on the hurricane-attributable rate is about &plusmn;%.1f pp at N = %s.</p>'
-        % (T, PARAMS["GFN_margin"], m["A"]["p_hcrisis_any"] * 100, m["B"]["p_hcrisis_any"] * 100,
-           change_cell(m["A"]["p_hcrisis_any"], m["B"]["p_hcrisis_any"]), PARAMS["GFN_crit"],
-           m["A"]["p_crisis_any"] * 100, m["B"]["p_crisis_any"] * 100,
-           change_cell(m["A"]["p_crisis_any"], m["B"]["p_crisis_any"]), 1.96 * se * 100, f"{n_paths:,}"),
+        '<p class="foot">Change = with clause minus no clause on the same hurricane draws; the 95%% interval is the paired '
+        'normal approximation at N = %s. Green: interval entirely below zero. Red: entirely above. Grey: includes zero.</p>'
+        % (ICON[verdict[0]], verdict[1], verdict[2], T, PARAMS["GFN_margin"],
+           PR["stress"]["mean_a"] * 100, PR["stress"]["mean_b"] * 100, change_cell(PR["stress"]),
+           CFG3["storm_window_margin"], PARAMS["GFN_margin"],
+           PR["stress_tw"]["mean_a"] * 100, PR["stress_tw"]["mean_b"] * 100, change_cell(PR["stress_tw"]),
+           PARAMS["GFN_crit"], PR["gfn15"]["mean_a"] * 100, PR["gfn15"]["mean_b"] * 100, change_cell(PR["gfn15"]),
+           PARAMS["GFN_margin"], PR["excess"]["mean_a"], PR["excess"]["mean_b"], change_cell(PR["excess"], 1, "pts", "{:+.1f}"),
+           f"{n_paths:,}"),
         unsafe_allow_html=True)
 
 # ---------------------------------------------------------------- charts
@@ -215,15 +250,22 @@ with plt.rc_context(CHART_RC):
 # ---------------------------------------------------------------- method notes
 with st.expander("Definitions and method notes"):
     st.markdown(
-        "- **Hurricane-attributable crisis**: GFN exceeds the *no-hurricane baseline path* of the same regime by more "
-        f"than {PARAMS['GFN_margin']:g} pp of GDP in at least one year of {T}.\n"
-        f"- **Absolute crisis**: GFN exceeds GFN_crit = {PARAMS['GFN_crit']:g}% of GDP in at least one year. "
-        "In grenada_like the baseline GFN is only about 3-8% of GDP, so the attributable flag (baseline + 5 pp) trips "
-        "far more often than the absolute one.\n"
+        "- **Financing-stress episode** (formerly 'hurricane-attributable crisis'; definition unchanged): GFN exceeds the "
+        f"*no-hurricane path of the same regime* by more than {PARAMS['GFN_margin']:g} points of GDP in at least one year of {T}.\n"
+        f"- **3-point storm window**: the threshold is {CFG3['storm_window_margin']:g} points in the strike year and the year after "
+        f"(when market access is most fragile) and {PARAMS['GFN_margin']:g} points in all other years. It can reverse the sign of the "
+        "high-coverage effect under the baseline repayment (see docs/RESULTS_v3.md, Table 4).\n"
+        "- **Expected excess GFN**: the mean over paths of the sum over years of max(0, GFN - no-hurricane GFN - 5), in points of GDP.\n"
+        f"- **GFN above {PARAMS['GFN_crit']:g}% of GDP**: absolute level. In the high-debt end of the b0 slider it is 100% by "
+        "construction, so the relative measures are the informative ones.\n"
+        "- **B' (Grenada's actual repayment)**: deferred amortization is repaid from the year after the suspension ends, due "
+        "strike year + 6 years (2030 bond maturity minus the 2024 strike). The sources disagree on the shape, so both are offered: "
+        "one lump sum, or equal instalments. Skipped interest is capitalised into the covered stock as in the baseline.\n"
         f"- **Primary balance** is interpolated with initial debt: {pd_bar:+.1f}% of GDP here (positive = deficit).\n"
         "- **Common random numbers**: the same hurricane draws hit every regime, so differences come from the "
-        "regime, not from luck.\n"
+        "regime, not from luck; the interval on each change is paired on those draws.\n"
         "- **Rates and growth** are nominal (r = 2.4%, g = 4.8% for Grenada: concessional debt). The high-debt end of the b0 "
         "slider uses r = 5.8% (an assumption).\n"
-        "- **Reproducibility**: at N = 10,000 and the defaults (Barbados-style, equal instalments over 5 years, fiscal rule on, "
-        "b0 = 65, lambda = 0.051, version 1, D_trig = 5) these numbers equal experiment 1's grenada_like rows exactly.")
+        "- **Reproducibility**: at N = 10,000 and the defaults (high-coverage, equal instalments over 5 years, fiscal rule on, "
+        "b0 = 65, lambda = 0.051, version 1, D_trig = 5) the stress probabilities equal Table 1 of docs/RESULTS_v3.md (23.1% / 24.7%); "
+        "choosing B'-lump gives 52.3%.")

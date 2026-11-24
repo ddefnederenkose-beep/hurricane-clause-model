@@ -11,6 +11,7 @@ python3 -m venv .venv && .venv/bin/pip install numpy pandas matplotlib pyyaml py
 `run_all.py` prints (a) the list of PLACEHOLDER_VERIFY parameters and (b) summary tables for every experiment. Options: `--seed N`, `--no-figures`.
 
 ## Live demo (for the video)
+Hosted: https://hurricane-clause-model-ks5q8gxscf9o5t2ez5fcns.streamlit.app (Streamlit Community Cloud; redeploys on every push to `main`).
 ```bash
 .venv/bin/pip install streamlit
 .venv/bin/streamlit run app.py

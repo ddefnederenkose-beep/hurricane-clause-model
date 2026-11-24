@@ -32,10 +32,19 @@ def suspension_mask(regime: str, d_t, rem, count, d_trig: float, k: int, cap=np.
     return rem > 0, rem, count + fire
 
 
-REPAY_RULES = ("equal_instalments", "declining_balance")
+REPAY_RULES = ("equal_instalments", "declining_balance", "lump_at_horizon", "equal_to_horizon", "lump_refinanced")
+# Regime B' (v3, Grenada's actual repayment; two readings of the sources). `due` = strike year + defer_repay_years (6):
+#   lump_at_horizon   the whole deferred balance is paid in ONE payment in year `due` (IMF CR 25/39: added to the principal due in 2030)
+#   equal_to_horizon  equal instalments (currency units) from the year after the suspension ends through year `due`
+#                     (Asonuma et al. 2017: repaid over the bond's remaining life)
+#   lump_refinanced   (v4 variant of B'-lump) no cash lump: in year `due` the deferred balance is folded into the regular covered stock and
+#                     amortises on the ordinary 1/M schedule at the market rate (V2: r_eff incl. the endogenous premium), i.e. it is refinanced
+# `due` is reset to (year of the latest trigger) + defer_repay_years whenever a new trigger fires (re-amortisation of the
+# pooled balance, the analogue of the baseline's instalment-counter reset).
 
 
-def service_split(regime: str, susp, bc_prev, int_c, defbal_prev, g, M, m_rep, rule="declining_balance", n_rem=None):
+def service_split(regime: str, susp, bc_prev, int_c, defbal_prev, g, M, m_rep, rule="declining_balance", n_rem=None,
+                  t=None, due=None):
     """Cash actually paid on covered debt plus deferral/forgiveness bookkeeping (all % of GDP_t).
 
     Repayment rule for the deferred balance defbal (Regime B):
@@ -56,7 +65,22 @@ def service_split(regime: str, susp, bc_prev, int_c, defbal_prev, g, M, m_rep, r
     if regime == "B":
         dprev = np.minimum(defbal_prev, pos)
         reg_am = (pos - dprev) / (M * d)            # regular schedule on the non-deferred part
-        if rule == "equal_instalments":
+        refi = np.zeros(pos.shape, dtype=bool)
+        if rule == "lump_refinanced":
+            if t is None or due is None:
+                raise ValueError("repay_rule 'lump_refinanced' needs the current year t and the due-year array")
+            refi = (t >= due) & ~susp                    # balance leaves the deferred tranche and joins the regular schedule
+            dprev = np.where(refi, 0.0, dprev)
+            reg_am = (pos - dprev) / (M * d)
+            rep = z
+        elif rule in ("lump_at_horizon", "equal_to_horizon"):
+            if t is None or due is None:
+                raise ValueError(f"repay_rule {rule!r} needs the current year t and the due-year array")
+            if rule == "lump_at_horizon":
+                rep = np.where(t >= due, dprev / d, 0.0)            # one payment of the whole deferred balance
+            else:
+                rep = dprev / (np.maximum(due - t + 1.0, 1.0) * d)  # equal instalments; the one in year `due` clears it
+        elif rule == "equal_instalments":
             n_use = np.maximum(n_rem, 1.0)
             rep = dprev / (n_use * d)                # equal instalments in currency units; last one clears the balance
         else:
@@ -65,7 +89,7 @@ def service_split(regime: str, susp, bc_prev, int_c, defbal_prev, g, M, m_rep, r
         rep_paid = np.where(susp, 0.0, rep)
         pay_am = np.where(susp, 0.0, reg_am + rep)
         skipped = np.where(susp, int_c + reg_am + rep, 0.0)
-        defbal = defbal_prev / d - rep_paid + np.where(susp, reg_am, 0.0)
+        defbal = np.where(refi, 0.0, defbal_prev / d - rep_paid + np.where(susp, reg_am, 0.0))
         n_new = np.where(susp, float(m_rep), np.maximum(n_rem - 1.0, 0.0))
         return dict(pay_int=pay_int, pay_am=pay_am, defer_repay=rep_paid, skipped=skipped, forgiven=z, defbal=defbal,
                     n_rem=n_new)

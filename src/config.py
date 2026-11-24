@@ -17,6 +17,7 @@ SCN_PARAM_KEYS = ("mu_D", "sigma_D", "kappa", "r_bar", "r_safe")
 CAL_PATH = ROOT / "config" / "calibration.yaml"
 SCN_PATH = ROOT / "config" / "scenarios.yaml"
 DES_PATH = ROOT / "config" / "designs.yaml"
+V3_PATH = ROOT / "config" / "v3.yaml"
 
 
 def _check_status(name, entry):
@@ -89,7 +90,18 @@ def status_counts() -> dict:
     for d in yaml.safe_load(DES_PATH.read_text())["designs"].values():
         for v in d["overrides"].values():
             c[v["status"]] += 1
+    if V3_PATH.exists():
+        for v in yaml.safe_load(V3_PATH.read_text())["parameters"].values():
+            c[v["status"]] += 1
     return dict(c)
+
+
+def load_v3(path=V3_PATH):
+    """Parameters added with the revised brief (3-pp storm-window threshold, 6-year B' horizon): {name: value}."""
+    raw = yaml.safe_load(pathlib.Path(path).read_text())["parameters"]
+    for k, v in raw.items():
+        _check_status(k, v)
+    return {k: v["value"] for k, v in raw.items()}
 
 
 def placeholder_warning(placeholders) -> str:

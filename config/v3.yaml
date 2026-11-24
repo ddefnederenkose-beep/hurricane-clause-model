@@ -1,0 +1,15 @@
+# New parameters introduced with the revised brief (RESULTS_v3). Kept in their own file so the baseline calibration
+# (calibration.yaml) and every baseline table stay untouched. Counted by config.status_counts().
+parameters:
+  storm_window_margin:
+    value: 3
+    source: ""
+    status: ASSUMPTION
+    meaning: "timing-dependent financing-stress threshold: GFN more than this many pp of GDP above the same regime's no-hurricane path in the strike year and the year after (5 pp = GFN_margin in all other years)"
+    note: "ASSUMPTION: our own modelling choice (market access is most fragile right after a strike); not a sourced number."
+  bprime_horizon:
+    value: 6
+    source: "IMF CR 25/39 (Beryl deferral added to the principal due at maturity in 2030); Asonuma et al. 2017 IMF WP/17/171 App. II p.51 (repaid over the bond's remaining life)"
+    status: CALIBRATED
+    meaning: "years from the strike to the due date of the deferred balance in regime B' (lump sum at, or equal instalments through, strike year + 6)"
+    note: "CALIBRATED: 2030 bond maturity minus 2024 Beryl strike = 6 years. The sources disagree on the SHAPE of repayment (lump vs instalments), so both are run (B'-lump, B'-inst)."

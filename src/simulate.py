@@ -10,13 +10,15 @@ from .config import check_units, scenario_params
 
 
 def simulate(params, scenario, regime="A", version=1, draws=None, forced_hits=None,
-             n_paths=1000, horizon=30, seed=42):
+             n_paths=1000, horizon=30, seed=42, inflows=None):
     """Simulate one regime.
 
     draws       : HurricaneDraws shared across regimes/versions/grid cells (common random numbers).
                   If None, drawn from `seed`.
     forced_hits : {year: damage_pct_gdp}. Explicit deterministic injection hook: REPLACES the random hurricane
                   process (all paths get exactly these hits, nothing else). Used by tests and the video sample path.
+    inflows     : optional {year: % of GDP} one-off cash inflow (e.g. an insurance payout) subtracted from that year's primary
+                  deficit. Default None = no inflow; used only by the Beryl validation (src/v4.py).
     """
     p = scenario_params(params, scenario)   # scenario-level overrides (damage law, kappa, r_bar, r_safe)
     check_units(p, scenario)
@@ -49,6 +51,7 @@ def simulate(params, scenario, regime="A", version=1, draws=None, forced_hits=No
     rem = np.zeros(N, dtype=int)
     n_rem = np.full(N, float(p.get("defer_repay_years", M)))   # equal-instalment counter (reset to m_rep while deferring)
     count = np.zeros(N, dtype=int)
+    due = np.full(N, np.inf)   # B' rules: year in which the deferred balance falls due (strike year + defer_repay_years)
     no_debt = np.zeros(N, dtype=bool)
     cap = p["max_triggers"] if p.get("use_trigger_cap", 1) else np.inf
     spread = p.get("deferral_spread", 0.0) if (regime in ("B", "C") and p.get("deferral_premium_on", 0)) else 0.0
@@ -60,18 +63,22 @@ def simulate(params, scenario, regime="A", version=1, draws=None, forced_hits=No
         g = economy.growth(p, d_t, d_prev)
         b_prev, bc_prev, bo_prev = out["b"][:, t - 1], out["bc"][:, t - 1], out["bo"][:, t - 1]
         pd = economy.primary_deficit(p, scenario["pd_bar"], recon, b_prev)
+        if inflows and t in inflows:
+            pd = pd - inflows[t]
         if p.get("no_surplus_rule", 0):
             # once total debt has been negative, the government stops running surpluses (pd floored at 0)
             no_debt = no_debt | (b_prev < 0)
             pd = np.where(no_debt, np.maximum(pd, 0.0), pd)
         reff, xbind = debt.effective_rate(p, version, out["reff"][:, t - 1], b_prev, out["gfn"][:, t - 1])
 
+        count_prev = count
         susp, rem, count = regimes.suspension_mask(regime, d_t, rem, count, p["D_trig"], K, cap)
+        due = np.where(count > count_prev, t + p.get("defer_repay_years", M), due)
         rc = reff + spread   # covered-debt rate (spread only in B/C when the robustness switch is on)
         int_c, _ = debt.scheduled_service(bc_prev, rc, g, M)
         int_o, am_o = debt.scheduled_service(bo_prev, reff, g, M)
         sp = regimes.service_split(regime, susp, bc_prev, int_c, out["q"][:, t - 1], g, M,
-                                   p.get("defer_repay_years", M), p.get("repay_rule", "declining_balance"), n_rem)
+                                   p.get("defer_repay_years", M), p.get("repay_rule", "declining_balance"), n_rem, t, due)
         n_rem = sp["n_rem"]
 
         share = debt.pd_allocation_share(bc_prev, b_prev, p["s"])
