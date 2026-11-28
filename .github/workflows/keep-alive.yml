@@ -4,7 +4,7 @@
 name: keep-streamlit-awake
 on:
   schedule:
-    - cron: "17 */6 * * *"     # every 6 hours (hibernation threshold is 12 h)
+    - cron: "7,37 * * * *"      # every 30 min: GitHub drops many scheduled runs (observed ~2 of 4 per day at a 6-h schedule), hibernation is ~12 h
   workflow_dispatch: {}
 jobs:
   ping:
